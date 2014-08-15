@@ -10,11 +10,9 @@ from GATools.DBUtils import DBUtils
 from GATools.plot.chart import chart
 
 DEBUG = True
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 WTF_I18N_ENABLED = False
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY
 
 pgdb = DBUtils()
 
@@ -316,5 +314,6 @@ def plot_sweep():
 if __name__ == '__main__':
     app.run(
         debug=True,
-        host="0.0.0.0"
+        host="0.0.0.0",
+        port=int(os.environ.get('FLASK_PORT', 5000))
         )
