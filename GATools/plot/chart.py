@@ -177,8 +177,8 @@ class chart:
         return (self.__createImage(fig, ext), len(run_ids_l))
 
 
-    def lineChartByConfigId(self, config_id, ext="png", stat_group="food",
-        stat=None, title=True):
+    def line_by_config_id(self, config_id, ext="png", stat_group="food",
+        stat=None, show_title=True):
         if not self.__network_list_cache or not self.__trail_list_cache:
             self.__cacheInit()
 
@@ -247,15 +247,13 @@ class chart:
 
             axis.plot(x, data_set, '-', label=curr_stat.title())
 
-            if title:
+            if show_title:
                 plot_title = (
                     "Mean - {0} - {1} g{2}/p{3}".format(
                         net_name,
                         trail_name,
                         num_gens,
                         run_info["population"]))
-
-
                 axis.set_title(plot_title)
 
         # Determine the maximum type to show.
