@@ -12,3 +12,18 @@ div.group_header
 {
 	font-size:1.5em;
 }
+
+body
+{
+	font-family: 'Ubuntu', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, button
+{
+	font-family: 'Vollkorn', serif;
+}
+
+dd, td
+{
+	font-family: 'Source Code Pro';
+}

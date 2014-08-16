@@ -213,14 +213,11 @@ def plot_by_run_id(run_id):
         mutate_name=mutate_name)
 
 @app.route("/plot/line/config_id/<int:config_id>/<ext>/<stat_group>")
-def img_by_conf_id(config_id, ext="png", stat_group ="food",
-    show_title=True):
+def img_by_conf_id(config_id, ext="png", stat_group ="food"):
 
     chart_inst = chart()
     print_title = str_to_bool(
-        request.args.get('show_title', default=show_title))
-    inline_encode = str_to_bool(
-        request.args.get('inline', default=inline))
+        request.args.get('show_title', default=True))
 
     output, plot_title = chart_inst.line_by_config_id(config_id, ext,
         stat_group=stat_group, show_title=print_title)
