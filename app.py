@@ -83,6 +83,12 @@ def page_not_found(e):
     """
     return render_template('404.html'), 404
 
+@app.errorhandler(500)
+def page_not_found(e):
+    """ Shows an error 500 page.
+    """
+    return render_template('50-.html'), 500
+
 @app.route('/config/<int:config_id>')
 def config_by_id(config_id):
     start = datetime.datetime.now()
