@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Page Not Found :(</title>
+        <title>Error - {{ title }}</title>
         <style>
             ::-moz-selection {
                 background: #b3d4fc;
@@ -141,9 +141,14 @@
     </head>
     <body>
         <div class="container">
-            <h1>Doh!<span> :X</span></h1>
-            <p>Sorry! Something has gone terribly wrong on our end. The lazy coder has been notified of the issue.</p>
-            <p>Want to try going <a href="/">home</a>?</p>
+            <h1>Error!</h1>
+            <p>{{ error }}</p>
+            <p>{{ fix|safe }}</p>
+            <!--
+            <script>
+                var GOOG_FIXURL_LANG = (navigator.language || '').slice(0,2),GOOG_FIXURL_SITE = location.host;
+            </script>
+            <script src="//linkhelp.clients.google.com/tbproxy/lh/wm/fixurl.js"></script> -->
         </div>
     </body>
 </html>

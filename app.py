@@ -84,10 +84,10 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
-def page_not_found(e):
+def bad_request(e):
     """ Shows an error 500 page.
     """
-    return render_template('50-.html'), 500
+    return render_template('500.html'), 500
 
 @app.route('/config/<int:config_id>')
 def config_by_id(config_id):
@@ -154,9 +154,69 @@ def config_by_id(config_id):
 def trail_by_id(trail_id):
     return render_template('404.html'), 404
 
+
+@app.route(
+    '/network',
+    defaults={
+        'network_id' : -1})
 @app.route('/network/<int:network_id>')
 def network_by_id(network_id):
-    return render_template('404.html'), 404
+    start = datetime.datetime.now()
+
+    table_data = pgdb.getNetworks()
+
+    from_run_id = int(request.args.get('from_run_id', default=-1))
+
+    if from_run_id >= 0:
+        run_information =  pgdb.fetchRunInfo(from_run_id)
+
+    if network_id < 0:
+        # List a table of all the networks.
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        return render_template(
+            "network_table.html",
+            table_data=table_data,
+            time_sec=finish_time_s)
+    elif network_id in table_data and ((
+        from_run_id >= 0 and from_run_id in run_information) or
+        from_run_id <= 0):
+        # Show the information on just this network.
+
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        if from_run_id >= 0:
+            run_information = run_information[from_run_id]
+        else:
+            run_information = None
+
+        return render_template(
+            "network_single.html",
+            network_id=network_id,
+            network_name=table_data[network_id],
+            run_info=run_information,
+            from_run_id=from_run_id,
+            time_sec=finish_time_s)
+    elif network_id not in table_data:
+        title="Invalid Network"
+        error = """
+        The network id {0} that you have requested is not valid!""".format(
+            network_id,
+            url_for('network_by_id'))
+        fix = """
+        Want to try browsing the <a href="{0}">list</a> of valid networks?
+        """.format(url_for('network_by_id'))
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+    elif from_run_id >= 0 and  from_run_id not in run_information:
+        error = """
+        The run_id {0} is not valid!""".format(from_run_id)
+        return render_template('400.html', error=error), 400
+
+    if not app.debug:
+        return bad_request("An unknown error has occurred!")
 
 @app.route('/run/<int:run_id>')
 def plot_by_run_id(run_id):
@@ -266,6 +326,6 @@ def img_by_run_id(run_id, ext="png", stat_group="food", group=False,
 if __name__ == '__main__':
     app.run(
         debug=True,
-        host="0.0.0.0",
+        host=str(os.environ.get('FLASK_DEF_IP', '0.0.0.0')),
         port=int(os.environ.get('FLASK_PORT', 5000))
         )

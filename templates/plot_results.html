@@ -35,7 +35,7 @@ Simulation Run {{ run_id }}
     <div class="col-md-4">
         <dl class="dl-horizontal">
             <dt>Network Name</dt>
-                <dd><a href="{{ url_for('network_by_id', network_id=run_info['networks_id']) }}">{{ network_name }}</a></dd>
+                <dd><a href="{{ url_for('network_by_id', network_id=run_info['networks_id'], from_run_id=run_id) }}">{{ network_name }}</a></dd>
             <dt>Trail Name</dt>
                 <dd><a href="{{ url_for('trail_by_id', trail_id=run_info['trails_id']) }}">{{ trail_name }}</a></dd>
             <dt>Mutate Type</dt>

@@ -54,7 +54,7 @@
             <footer>
                 <hr />
                 <div class="container-fluid text-center">
-                    <a href="/">Home</a> | <a href="#" name="top">Top</a><br />
+                    <a href="/">Home</a> | {% block footer_crumbs %}{% endblock %}<a href="#" name="top">Top</a><br />
                     {% block footer_text %}{% endblock %}
                 </div>
             </footer>
