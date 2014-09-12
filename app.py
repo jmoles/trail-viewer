@@ -3,7 +3,7 @@ import json
 import math
 import os
 import base64
-from flask import Flask, render_template, request, make_response, url_for
+from flask import Flask, render_template, request, make_response, Response, url_for
 import mimetypes
 
 from GATools.DBUtils import DBUtils
@@ -150,15 +150,116 @@ def config_by_id(config_id):
         mutate_name    = mutate_name,
         table_data     = table_data)
 
+@app.route('/trail', defaults={'trail_id' : -1})
 @app.route('/trail/<int:trail_id>')
 def trail_by_id(trail_id):
+    start = datetime.datetime.now()
+
+    table_data = pgdb.getTrails()
+
+    # Check that the user requested a valid trail.
+    if trail_id > 0 and trail_id not in table_data:
+        title="Invalid Trail"
+        error = """
+        The trail id {0} that you have requested is not valid!""".format(
+            trail_id,
+            url_for('network_by_id'))
+        fix = """
+        Want to try browsing the <a href="{0}">list</a> of valid trails?
+        """.format(url_for('trail_by_id'))
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+
+    # Now check for the run_id and ensure validity.
+    from_run_id = int(request.args.get('from_run_id', default=-1))
+
+    if from_run_id >= 0:
+        run_information = pgdb.fetchRunInfo(from_run_id)
+
+    if from_run_id >= 0 and from_run_id not in run_information:
+        error = """
+        The run_id {0} is not valid!""".format(from_run_id)
+        return render_template('400.html', error=error), 400
+
+    # Trail ID and run ID (if specified) are valid.
+
+    # Render the table or render the trail.
+
+    if trail_id < 0:
+        # List a table of all the trails.
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        return render_template(
+            "trail_table.html",
+            table_data=table_data,
+            time_sec=finish_time_s)
+    else:
+        # Show the information on just this trail.
+
+        # Fetch the data of the trail for rendering.
+        trail_data, _, _ = pgdb.getTrailData(trail_id)
+
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        if from_run_id >= 0:
+            run_information = run_information[from_run_id]
+        else:
+            run_information = None
+
+        print trail_data.tolist()
+
+        return render_template(
+            "trail_single.html",
+            id=trail_id,
+            name=table_data[trail_id],
+            data=trail_data.tolist(),
+            run_info=run_information,
+            from_run_id=from_run_id,
+            time_sec=finish_time_s)
+
+
+    if not app.debug:
+        return bad_request("An unknown error has occurred!")
+
     return render_template('404.html'), 404
 
+@app.route('/trail/sql')
+def trail_sql():
 
-@app.route(
-    '/network',
-    defaults={
-        'network_id' : -1})
+    trail_data = pgdb.getTrailSQL()
+
+    trail_strs = ""
+    for curr_trail in trail_data:
+        trail_strs += "(DEFAULT, '{0}', {1}, {2}, '{3}'),\n".format(
+            curr_trail[1],
+            curr_trail[2],
+            curr_trail[3],
+            json.dumps(curr_trail[4]).replace('[', '{').replace(']','}')
+            )
+
+    trail_strs = trail_strs.strip().rstrip(",")
+
+    body = """
+-- Table: trails
+CREATE TABLE trails (
+    id serial  NOT NULL,
+    name text  NOT NULL,
+    moves int  NOT NULL,
+    init_rot smallint  NOT NULL,
+    trail_data smallint[][]  NOT NULL,
+    CONSTRAINT trails_pk PRIMARY KEY (id)
+);
+
+INSERT INTO trails (id, name, moves, init_rot, trail_data) VALUES
+{0};""".format(trail_strs)
+
+
+    return Response(body, content_type="text/plain;charset=UTF-8")
+
+
+@app.route('/network', defaults={'network_id' : -1})
 @app.route('/network/<int:network_id>')
 def network_by_id(network_id):
     start = datetime.datetime.now()

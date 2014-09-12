@@ -124,6 +124,13 @@ class DBUtils:
 
         return ret_dict
 
+    def getTrailSQL(self):
+        with self.__getCursor() as curs:
+            curs.execute("""SELECT * FROM trails;""")
+
+            curs_results = curs.fetchall()
+
+        return curs_results
 
     def getTrailData(self, trailID):
         with self.__getCursor() as curs:
