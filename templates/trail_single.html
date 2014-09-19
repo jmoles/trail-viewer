@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ name|title }}
+{% endblock %}
+
+{% block navbar %}
+<ol class="breadcrumb navbar-fixed-top" role="navigation">
+    <li><a href="{{ url_for('index') }}">Home</a></li>
+    {% if from_run_id >= 0 %}
+    <li><a href="{{ url_for('config_by_id', config_id=run_info['run_config_id']) }}">Run Configuration {{ run_info["run_config_id"] }}</a></li>
+    <li><a href="{{ url_for('plot_by_run_id', run_id=from_run_id)}}">Run ID {{from_run_id}}</a></li>
+    {% else %}
+    <li><a href="{{ url_for('trail_by_id')}}">Trail Listing</a></li>
+    {% endif %}
+    <li class="active">{{ name|title }}</li>
+</ol>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script>
+var BOX_SIZE = 16;
+
+var GRID_VALS = {};
+GRID_VALS["empty"] = 0
+GRID_VALS["food"] = 1
+GRID_VALS["ant-0"] = 2
+GRID_VALS["ant-90"] = 3
+GRID_VALS["ant-180"] = 4
+GRID_VALS["ant-270"] = 5
+GRID_VALS["best-route"] = 7
+GRID_VALS["finish"] = 8
+GRID_VALS["history"] = 9
+
+var COLORS = {};
+COLORS["empty"] = "#fff";
+COLORS["ant-fill"] = "#000";
+COLORS["food-bg"] = "#DB5332";
+COLORS["food-fill"] = "#F49D33";
+COLORS["best-route"] = "#4A6578";
+COLORS["finish"] = "#8D403C";
+COLORS["history"] = "#ccc";
+
+function render_square_dojo(surface, x, y, type) {
+    var rectangle = surface.createRect({
+        x : x,
+        y : y,
+        width : BOX_SIZE,
+        height : BOX_SIZE
+    });
+
+    rectangle.setStroke("gray");
+
+    switch (type) {
+        case GRID_VALS["empty"]:
+            rectangle.setFill(COLORS["empty"]);
+            break;
+        case GRID_VALS["food"]:
+            rectangle.setFill(COLORS["food-bg"]);
+            surface.createCircle({
+                cx : x + BOX_SIZE / 2,
+                cy : y + BOX_SIZE / 2,
+                r : BOX_SIZE / 4
+            }).setFill(COLORS["food-fill"]).setStroke("black");
+            break;
+        case GRID_VALS["ant-0"]:
+        case GRID_VALS["ant-90"]:
+        case GRID_VALS["ant-180"]:
+        case GRID_VALS["ant-270"]:
+            var scale_fact = (3 / 4);
+
+            rectangle.setFill(COLORS["history"]);
+
+            if (type == GRID_VALS["ant-0"]) {
+                var ant = surface.createPolyline([
+                    {x : x + (1 - scale_fact) * BOX_SIZE, y : y + BOX_SIZE * scale_fact},
+                    {x : x + BOX_SIZE / 2, y : y + (1 - scale_fact) * BOX_SIZE},
+                    {x : x + BOX_SIZE * scale_fact, y : y + (BOX_SIZE * scale_fact)}]);
+            } else if (type == GRID_VALS["ant-90"]) {
+                var ant = surface.createPolyline([
+                    {x : x + (1 - scale_fact) * BOX_SIZE, y : y + (1 - scale_fact) * BOX_SIZE},
+                    {x : x + (1 - scale_fact) * BOX_SIZE, y : y + scale_fact * BOX_SIZE},
+                    {x : x + scale_fact * BOX_SIZE, y : y + (BOX_SIZE / 2)}]);
+            } else if (type == GRID_VALS["ant-180"]) {
+                var ant = surface.createPolyline([
+                    {x : x + (1 - scale_fact) * BOX_SIZE, y : y + (1 - scale_fact) * BOX_SIZE},
+                    {x : x + scale_fact * BOX_SIZE, y : y + (1 - scale_fact) * BOX_SIZE},
+                    {x : x + BOX_SIZE / 2, y : y + scale_fact * BOX_SIZE}]);
+            } else if (type == GRID_VALS["ant-270"]) {
+                var ant = surface.createPolyline([
+                    {x : x + BOX_SIZE * scale_fact, y : y + (1 - scale_fact) * BOX_SIZE},
+                    {x : x + BOX_SIZE * scale_fact, y : y + scale_fact * BOX_SIZE},
+                    {x : x + (1 - scale_fact) * BOX_SIZE, y : y + BOX_SIZE / 2}]);
+            }
+
+            ant.setFill("black").setStroke("black");
+            break;
+        case GRID_VALS["best-route"]:
+            rectangle.setFill(COLORS["best-route"]);
+            break;
+        case GRID_VALS["finish"]:
+            rectangle.setFill(COLORS["finish"]);
+            break;
+        case GRID_VALS["history"]:
+            rectangle.setFill(COLORS["history"]);
+            break;
+    }
+
+}
+
+window.onload = function() {
+    dojo.require("dojox.gfx");
+
+    var trail_data = {{ data }};
+
+    var x_dim = trail_data[0].length;
+    var y_dim = trail_data.length;
+
+    var img_x = (x_dim) * BOX_SIZE;
+    var img_y = (y_dim) * BOX_SIZE;
+
+    // Dojo
+    dojo.ready(function(){
+        var surface = dojox.gfx.createSurface("trail_canvas_container_dojo", img_x, img_y);
+
+        var x_idx, y_idx;
+        for (y_idx = 0; y_idx < y_dim; y_idx++) {
+            for (x_idx = 0; x_idx < x_dim; x_idx++) {
+                render_square_dojo(
+                    surface,
+                    x_idx * BOX_SIZE,
+                    y_idx * BOX_SIZE,
+                    trail_data[y_idx][x_idx])
+            }
+        }
+    })
+}
+</script>
+{% endblock %}
+
+{% block header_text %}
+{{ name|title }} <small>Used for {{ num_runs }} runs</small>
+{% endblock %}
+
+<!-- TODO: Finish this stuff -->
+{% block content %}
+<h2>Configuration</h2>
+<div class="row">
+    <dl class="dl-horizontal">
+        <dt>Trail ID</dt>
+            <dd>{{ id }}</dd>
+        <dt>Trail Name</dt>
+            <dd>{{ name }}</dd>
+    </dl>
+</div>
+
+<h2>Layout</h2>
+<div class="row">
+    <div id="trail_canvas_container_dojo"></div>
+</div>
+
+<h2>Raw Data</h2>
+<div class="row">
+    <div>[{{ data|join(",<br />")|safe }}]</div>
+</div>
+{% endblock %}
+
+{% block footer_text %}
+    Generated in {{ time_sec }} seconds.
+{% endblock %}
