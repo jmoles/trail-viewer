@@ -2,20 +2,7 @@
 {% set active_page = "trail_by_id" %}
 
 {% block title %}
-{{ name|title }}
-{% endblock %}
-
-{% block navbar %}
-<ol class="breadcrumb navbar-fixed-top" role="navigation">
-    <li><a href="{{ url_for('index') }}">Home</a></li>
-    {% if from_run_id >= 0 %}
-    <li><a href="{{ url_for('config_by_id', config_id=run_info['run_config_id']) }}">Run Configuration {{ run_info["run_config_id"] }}</a></li>
-    <li><a href="{{ url_for('plot_by_run_id', run_id=from_run_id)}}">Run ID {{from_run_id}}</a></li>
-    {% else %}
-    <li><a href="{{ url_for('trail_by_id')}}">Trail Listing</a></li>
-    {% endif %}
-    <li class="active">{{ name|title }}</li>
-</ol>
+{{ trail_data["name"]|title }}
 {% endblock %}
 
 {% block head %}
@@ -113,7 +100,7 @@ function render_square_dojo(surface, x, y, type) {
 window.onload = function() {
     dojo.require("dojox.gfx");
 
-    var trail_data = {{ data }};
+    var trail_data = {{ trail_data["data"] }};
 
     var x_dim = trail_data[0].length;
     var y_dim = trail_data.length;
@@ -141,7 +128,8 @@ window.onload = function() {
 {% endblock %}
 
 {% block header_text %}
-{{ name|title }} <small>Used for {{ num_runs }} runs</small>
+{{ trail_data["name"]|title }}
+<small>Used for <a href="{{ url_for('run_listing')}}">{{ num_runs }}</a> runs</small>
 {% endblock %}
 
 <!-- TODO: Finish this stuff -->
@@ -152,7 +140,13 @@ window.onload = function() {
         <dt>Trail ID</dt>
             <dd>{{ id }}</dd>
         <dt>Trail Name</dt>
-            <dd>{{ name }}</dd>
+            <dd>{{ trail_data["name"] }}</dd>
+        <dt>Food</dt>
+            <dd>{{ trail_data["food_count"] }}</dd>
+        <dt>Dimensions</dt>
+            <dd>{{ trail_data["dimension_str"] }}</dd>
+        <dt>Recommended Moves</dt>
+            <dd>{{ trail_data["moves"] }}</dd>
     </dl>
 </div>
 
@@ -163,7 +157,7 @@ window.onload = function() {
 
 <h2>Raw Data</h2>
 <div class="row">
-    <div>[{{ data|join(",<br />")|safe }}]</div>
+    <div>[{{ trail_data["data"]|join(",<br />")|safe }}]</div>
 </div>
 {% endblock %}
 

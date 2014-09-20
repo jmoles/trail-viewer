@@ -160,10 +160,10 @@ def config_by_id(config_id):
 def trail_by_id(trail_id):
     start = datetime.datetime.now()
 
-    table_data = pgdb.getTrails()
+    raw_data = pgdb.getTrails()
 
     # Check that the user requested a valid trail.
-    if trail_id > 0 and trail_id not in table_data:
+    if trail_id > 0 and trail_id not in raw_data:
         title="Invalid Trail"
         error = """
         The trail id {0} that you have requested is not valid!""".format(
@@ -177,21 +177,21 @@ def trail_by_id(trail_id):
             error=error,
             fix=fix), 400
 
-    # Now check for the run_id and ensure validity.
-    from_run_id = int(request.args.get('from_run_id', default=-1))
+    # Trail ID is valid.
+    # Calculate the food count and trail dimension str.
+    table_data = {}
+    for curr_key, curr_val in raw_data.items():
+        new_dict = curr_val
 
-    if from_run_id >= 0:
-        run_information = pgdb.fetchRunInfo(from_run_id)
+        new_dict["food_count"] = (
+            [x for y in curr_val["data"] for x in y].count(1))
+        new_dict["dimension_str"] = "{0} x {1}".format(
+            len(curr_val["data"][0]),
+            len(curr_val["data"]))
 
-    if from_run_id >= 0 and from_run_id not in run_information:
-        error = """
-        The run_id {0} is not valid!""".format(from_run_id)
-        return render_template('400.html', error=error), 400
-
-    # Trail ID and run ID (if specified) are valid.
+        table_data[curr_key] = new_dict
 
     # Render the table or render the trail.
-
     if trail_id < 0:
         # List a table of all the trails.
         finish_time_s = str((datetime.datetime.now() - start).total_seconds())
@@ -202,26 +202,13 @@ def trail_by_id(trail_id):
             time_sec=finish_time_s)
     else:
         # Show the information on just this trail.
-
-        # Fetch the data of the trail for rendering.
-        trail_data, _, _ = pgdb.getTrailData(trail_id)
-
         finish_time_s = str((datetime.datetime.now() - start).total_seconds())
-
-        if from_run_id >= 0:
-            run_information = run_information[from_run_id]
-        else:
-            run_information = None
-
-        print trail_data.tolist()
 
         return render_template(
             "trail_single.html",
             id=trail_id,
-            name=table_data[trail_id],
-            data=trail_data.tolist(),
-            run_info=run_information,
-            from_run_id=from_run_id,
+            trail_data=table_data[trail_id],
+            num_runs=0,
             time_sec=finish_time_s)
 
 

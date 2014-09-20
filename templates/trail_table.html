@@ -32,12 +32,16 @@ Trails
         <tr>
             <th>ID</th>
             <th>Name</th>
+            <th>Food Count</th>
+            <th>Dimensions</th>
         </tr>
     </thead>
     <tfoot>
         <tr>
             <th>ID</th>
             <th>Name</th>
+            <th>Food Count</th>
+            <th>Dimensions</th>
         </tr>
         <tr>
             <th colspan="13" class="ts-pager" data-column"0">
@@ -67,10 +71,12 @@ Trails
         </tr>
     </tfoot>
     <tbody>
-    {% for id, name in table_data.iteritems() %}
+    {% for id, info in table_data.iteritems() %}
     <tr class="clickableRow" href="{{ url_for('trail_by_id', trail_id=id) }}">
             <td>{{ id  }}</td>
-            <td>{{ name  }}</td>
+            <td>{{ info["name"]  }}</td>
+            <td>{{ info["food_count"] }}</td>
+            <td>{{ info["dimension_str"] }}</td>
     </tr>
     {% endfor %}
     </tbody>

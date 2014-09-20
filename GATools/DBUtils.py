@@ -109,7 +109,20 @@ class DBUtils:
         return self.__genericDictGet("SELECT id, name FROM networks")
 
     def getTrails(self):
-        return self.__genericDictGet("SELECT id, name FROM trails")
+        ret_dict = {}
+
+        with self.__getCursor() as curs:
+            curs.execute("""SELECT id, name, moves, init_rot, trail_data
+                FROM trails""")
+            for idx, name, moves, rot, data in curs.fetchall():
+                temp_dict = {
+                    'name' : name,
+                    'moves' : moves,
+                    'rot' : rot,
+                    'data' : data}
+                ret_dict[idx] = temp_dict
+
+        return ret_dict
 
     def getMutates(self):
         return self.__genericDictGet("SELECT id, name FROM mutate")
@@ -134,12 +147,17 @@ class DBUtils:
 
     def getTrailData(self, trailID):
         with self.__getCursor() as curs:
-            curs.execute("""SELECT trail_data, name, init_rot FROM trails
+            curs.execute("""SELECT trail_data, name, init_rot, moves
+                FROM trails
                 WHERE id=%s;""", (trailID, ))
 
             curs_results = curs.fetchall()[0]
 
-        return np.matrix(curs_results[0]), curs_results[1], curs_results[2]
+        return (
+            np.matrix(curs_results[0]),
+            curs_results[1],
+            curs_results[2],
+            curs_results[3])
 
     def fetchRunGenerations(self, run_id):
 
