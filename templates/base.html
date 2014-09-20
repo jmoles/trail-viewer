@@ -38,12 +38,41 @@
         {% endblock %}
     </head>
 
+{% set navigation_bar = [
+    ('run_listing', 'Runs'),
+    ('trail_by_id', 'Trails'),
+    ('network_by_id', 'Networks')
+]%}
+
     <body>
         <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
-        {% block navbar %}{% endblock %}
+        <nav class="navbar navbar-default" role="navigation">
+          <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a class="navbar-brand" href="{{ url_for('index')}}">Trail Viewer</a>
+            </div>
 
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+              <ul class="nav navbar-nav">
+                {% for id, caption in navigation_bar %}
+                    <li {% if id == active_page %} class="active"{% endif%}>
+                        <a href="{{ url_for(id) }}">{{ caption|e }}</a>
+                    </li>
+                {% endfor %}
+              </ul>
+            </div><!-- /.navbar-collapse -->
+          </div><!-- /.container-fluid -->
+        </nav>
 
         <div class="container">
             <div class="page-header">
@@ -58,7 +87,11 @@
             <footer>
                 <hr />
                 <div class="container-fluid text-center">
-                    <a href="/">Home</a> | {% block footer_crumbs %}{% endblock %}<a href="#" name="top">Top</a><br />
+                    <a href="/">Home</a> |
+                    {% for id, caption in navigation_bar %}
+                    <a href="{{ url_for(id) }}">{{ caption|e }}</a> |
+                    {% endfor %}
+                    <a href="#" name="top">Top</a><br />
                     {% block footer_text %}{% endblock %}
                 </div>
             </footer>

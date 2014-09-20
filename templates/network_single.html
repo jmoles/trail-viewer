@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set active_page = "network_by_id" %}
 
 {% block title %}
 Network Configuration {{ network_id }}
@@ -208,8 +209,4 @@ $(function() {
 
 });
 </script>
-{% endblock %}
-
-{% block footer_crumbs %}
-<a href="{{ url_for('network_by_id') }}">Networks Listing</a> |
 {% endblock %}

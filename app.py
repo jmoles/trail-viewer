@@ -9,7 +9,8 @@ import mimetypes
 from GATools.DBUtils import DBUtils
 from GATools.plot.chart import chart
 
-DEBUG = True
+DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
+    ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False
 
 app = Flask(__name__)
@@ -60,7 +61,7 @@ def inline_img_by_conf_id(conf_id, stat_group="food"):
             json.dumps({'generations' : 200, 'moves_limit': 200})
         })
 @app.route('/filter/<filters>')
-def index(filters):
+def run_listing(filters):
     """ Renders the home page showing a table of results.
 
     """
@@ -76,6 +77,10 @@ def index(filters):
         "home.html",
         table_data=table_data,
         time_sec=finish_time_s)
+
+@app.route('/new_index')
+def index():
+    pass
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -426,7 +431,7 @@ def img_by_run_id(run_id, ext="png", stat_group="food", group=False,
 
 if __name__ == '__main__':
     app.run(
-        debug=True,
+        debug=DEBUG,
         host=str(os.environ.get('FLASK_DEF_IP', '0.0.0.0')),
         port=int(os.environ.get('FLASK_PORT', 5000))
         )
