@@ -5,6 +5,7 @@ import os
 import base64
 from flask import Flask, render_template, request, make_response, Response, url_for
 import mimetypes
+from werkzeug.datastructures import ImmutableMultiDict
 
 from GATools.DBUtils import DBUtils
 from GATools.plot.chart import chart
@@ -54,28 +55,70 @@ def inline_img_by_conf_id(conf_id, stat_group="food"):
 
 
 ### Begin Routes ###
-@app.route(
-    '/',
-    defaults={
-        'filters' :
-            json.dumps({'generations' : 200, 'moves_limit': 200})
-        })
-@app.route('/filter/<filters>')
-def run_listing(filters):
+@app.route('/')
+def run_listing():
     """ Renders the home page showing a table of results.
 
     """
     start = datetime.datetime.now()
 
-    filters_d = json.loads(filters)
+    table_data = None
 
-    table_data = pgdb.table_listing(filters=filters_d)
+    # If a valid key and arguments are provided, get table data.
+    # Otherwise, just show the filters.
+    if len(request.args) > 0:
+        for curr_key in request.args.to_dict().keys():
+            if curr_key in DBUtils.FILTERS_IDS:
+                table_data = pgdb.table_listing(filters=request.args.to_dict())
+                break
+
+
+    # Build the list for the filtering options.
+    filter_results = pgdb.build_filter_options(filters=request.args.to_dict())
+    filter_list = []
+    for idx, filter_id in enumerate(DBUtils.FILTERS_IDS):
+        # Start with a highest level dictionary containing ids,
+        # pretty string, and then a list of values for that row.
+        # For each value row, determine the value and URL to print.
+        if filter_id in request.args.to_dict():
+            # Skip those that are already in the list.
+            continue
+        temp_dict = {}
+        values_list = []
+        temp_dict["id"] = filter_id
+        temp_dict["string"] = DBUtils.FILTERS_STRINGS[idx]
+        for curr_val in filter_results[idx]:
+            curr_val_dict = {}
+            curr_val_dict["value"] = curr_val
+            # Determine the URL. If other arguments are passed,
+            # continue to pass them. If not, don't pass them.
+            if len(request.args) > 0:
+                this_url_dict = (ImmutableMultiDict(dict(
+                    {filter_id : unicode(curr_val)}.items() +
+                    request.args.to_dict().items()
+                    )))
+            else:
+                this_url_dict = ImmutableMultiDict(
+                    {filter_id : unicode(curr_val)})
+
+            # If there is only one result, the URL is None
+            # because there is really nothing to click.
+            if len(filter_results[idx]) > 1:
+                curr_val_dict["url"] = url_for(
+                    'run_listing', **this_url_dict)
+            else:
+                curr_val_dict["url"] = None
+
+            values_list.append(curr_val_dict)
+        temp_dict["values"] = values_list
+        filter_list.append(temp_dict)
 
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
     return render_template(
         "home.html",
         table_data=table_data,
+        filter_list=filter_list,
         time_sec=finish_time_s)
 
 @app.route('/new_index')
@@ -133,7 +176,7 @@ def config_by_id(config_id):
 
     config_info =  pgdb.fetchConfigInfo(config_id)
 
-    trail_name   = pgdb.getTrails()[config_info["trails_id"]]
+    trail_name   = pgdb.getTrails()[config_info["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[config_info["networks_id"]]
     mutate_name  = pgdb.getMutates()[config_info["mutate_id"]]
 
@@ -355,7 +398,7 @@ def plot_by_run_id(run_id):
         int(round(runtime_sec % 3600 // 60)),
         int(round(runtime_sec % 60)))
 
-    trail_name   = pgdb.getTrails()[run_information["trails_id"]]
+    trail_name   = pgdb.getTrails()[run_information["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[run_information["networks_id"]]
     mutate_name  = pgdb.getMutates()[run_information["mutate_id"]]
 

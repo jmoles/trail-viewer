@@ -57,17 +57,12 @@ class chart:
                 self.__run_info_cache.items() +
                 self.__pgdb.fetchRunInfo(ids_search_l).items())
 
-        run_info = self.__run_info_cache
+        run_info = self.__pgdb.fetchRunInfo(run_id)
 
         # Determine the maximum amount of food
-        if not self.__trails_cache.has_key(run_info[run_id]["trails_id"]):
-            trail_grid, _, _ = self.__pgdb.getTrailData(
-                run_info[run_id]["trails_id"])
-            self.__trails_cache[run_info[run_id]["trails_id"]] = trail_grid
-        else:
-            trail_grid = self.__trails_cache[run_info[run_id]["trails_id"]]
+        trail_data = self.__pgdb.getTrails()[run_info[run_id]["trails_id"]]
 
-        max_food = np.bincount(np.array(trail_grid.flatten())[0])[1]
+        max_food = [x for y in trail_data["data"] for x in y].count(1)
 
         # Find the network name, trail name, and number of generations.
         net_name   = self.__network_list_cache[run_info[run_id]["networks_id"]]
@@ -198,14 +193,9 @@ class chart:
         run_info = self.__pgdb.fetchConfigInfo(config_id)
 
         # Determine the maximum amount of food
-        if not self.__trails_cache.has_key(run_info["trails_id"]):
-            trail_grid, _, _ = self.__pgdb.getTrailData(
-                run_info["trails_id"])
-            self.__trails_cache[run_info["trails_id"]] = trail_grid
-        else:
-            trail_grid = self.__trails_cache[run_info["trails_id"]]
+        trail_data = self.__pgdb.getTrails()[run_info["trails_id"]]
 
-        max_food = np.bincount(np.array(trail_grid.flatten())[0])[1]
+        max_food = [x for y in trail_data["data"] for x in y].count(1)
 
         # Find the network name, trail name, and number of generations.
         net_name   = self.__network_list_cache[run_info["networks_id"]]

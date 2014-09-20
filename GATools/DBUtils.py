@@ -41,6 +41,32 @@ class NetworkNotFound(Exception):
 
 
 class DBUtils:
+    FILTERS_IDS = [
+        "networks_id",
+        "trails_id",
+        "mutate_id",
+        "generations",
+        "population",
+        "moves_limit",
+        "elite_count",
+        "p_mutate",
+        "p_crossover",
+        "weight_min",
+        "weight_max"]
+
+    FILTERS_STRINGS = [
+        "Networks",
+        "Trails",
+        "Mutate ID",
+        "Generations",
+        "Population",
+        "Moves Limit",
+        "Elite Count",
+        "P(mutate)",
+        "P(Crossover)",
+        "Min. Weight",
+        "Max. Weight"]
+
     def __init__(
         self,
         host=os.environ.get("PSYCOPG2_DB_HOST", "localhost"),
@@ -535,7 +561,7 @@ class DBUtils:
             population, moves_limit, elite_count, mutate_id,
             p_mutate, p_crossover, weight_min, weight_max
             FROM   run_config
-            {0}""".format(where_str)
+            {0};""".format(where_str)
 
         # Run the query and get the data table.
         with self.__getCursor() as curs:
@@ -556,6 +582,29 @@ class DBUtils:
 
         return ret_val
 
+    def build_filter_options(self, filters=None):
+        """ Returns a list with options for filtering based of data
+        in the run_config table."""
+
+        where_str = DBUtils.__build_where_filters(filters)
+
+        query_str = """SELECT
+        networks_id, trails_id, mutate_id, generations, population,
+        moves_limit, elite_count, p_mutate, p_crossover, weight_min,
+        weight_max
+        FROM run_config
+        {0};""".format(where_str)
+
+        with self.__getCursor() as curs:
+            curs.execute(query_str, filters.values())
+
+            curs_results = curs.fetchall()
+
+        ret_val = [
+            list(set(xx)) for xx in zip(
+                *[list(yy) for yy in curs_results][::-1])]
+
+        return ret_val
 
     def getRunsWithConfigID(self, config_id):
         """ Takes a configuration id and returns all of the run_ids that

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set active_page = "run_listing" %}
 
 {% block title %}
 Home
@@ -9,120 +10,138 @@ Home
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery.tablesorter.pager.css') }}">
 {% endblock %}
 
-
-{% block navbar %}
-<ol class="breadcrumb navbar-fixed-top" role="navigation">
-    <li class="active">Home</li>
-</ol>
-{% endblock %}
-
 {% block header_text %}
 Home
 {% endblock %}
 
 {% block content %}
-<h2>Runs with This Configuration</h2>
-<table class="tablesorter table table-striped">
-    <colgroup>
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="1*" />
-        <col width="2*" />
-    </colgroup>
-    <thead>
-        <tr>
-            <th>Trail</th>
-            <th>Network</th>
-            <th>Gen</th>
-            <th>Pop</th>
-            <th>Move Lim.</th>
-            <th>Elite</th>
-            <th>Mutate Type</th>
-            <th>P(mut)</th>
-            <th>P(cross)</th>
-            <th>Min. Weight</th>
-            <th>Max. Weight</th>
-            <th>Run Count</th>
-            <th>Run IDs</th>
-        </tr>
-    </thead>
-    <tfoot>
-        <tr>
-            <th>Trail</th>
-            <th>Network</th>
-            <th>Gen</th>
-            <th>Pop</th>
-            <th>Move Lim.</th>
-            <th>Elite</th>
-            <th>Mutate Type</th>
-            <th>P(mut)</th>
-            <th>P(cross)</th>
-            <th>Min. Weight</th>
-            <th>Max. Weight</th>
-            <th>Run Count</th>
-            <th>Run IDs</th>
-        </tr>
-        <tr>
-            <th colspan="13" class="ts-pager" data-column"0">
-                <button type="button" class="btn first">
-                    <span class="glyphicon glyphicon-step-backward"></span>
-                </button>
-                <button type="button" class="btn prev">
-                    <span class="glyphicon glyphicon-backward"></span>
-                </button>
-                <span class="pagedisplay"></span>
-                <button type="button" class="btn next">
-                    <span class="glyphicon glyphicon-forward"></span>
-                </button>
-                <button type="button" class="btn last">
-                    <span class="glyphicon glyphicon-step-forward"></span>
-                </button>
-                <select class="pagesize input-mini" title="Select page size">
-                    <option selected="selected" value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="40">40</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                <select class="pagenum input-mini" title="Select page number"></select>
-            </th>
-        </tr>
-    </tfoot>
-    <tbody>
-    {% for curr_line in table_data %}
-    <tr>
+<h2>Filter Options</h2>
+<div class="row">
+    <dl class="dl-horizontal">
+        {% for values_d in filter_list %}
+            <dt>{{ values_d["string"] }}</dt>
+                <dd><ul class="filter_listing">
+                {% for curr_val_d in values_d["values"] %}
+                    <li>
+                        {% if curr_val_d["url"] != None %}
+                            <a href="{{ curr_val_d["url"] }}">
+                        {% endif %}
+                        {{ curr_val_d["value"] }}
+                        {% if curr_val_d["url"] != None %}
+                            </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul></dd>
+        {% endfor %}
+    </dl>
+</div>
 
-            <td>{{ curr_line[1]  }}</td>
-            <td>{{ curr_line[2]  }}</td>
-            <td>{{ curr_line[3]  }}</td>
-            <td>{{ curr_line[4]  }}</td>
-            <td>{{ curr_line[5]  }}</td>
-            <td>{{ curr_line[6]  }}</td>
-            <td>{{ curr_line[7]  }}</td>
-            <td>{{ curr_line[8]  }}</td>
-            <td>{{ curr_line[9]  }}</td>
-            <td>{{ curr_line[10]  }}</td>
-            <td>{{ curr_line[11]  }}</td>
-            <td>{{ curr_line[12]|length  }}</td>
-            <td>
-            {% for curr_run_id in curr_line[12] %}
-                <a href="{{ url_for('plot_by_run_id', run_id=curr_run_id) }}">{{ curr_run_id }}</a>&nbsp;
-            {% endfor %}
-            </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% if table_data != None %}
+    <h2>Runs with This Configuration</h2>
+    <table class="tablesorter table table-striped">
+        <colgroup>
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="1*" />
+            <col width="2*" />
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Trail</th>
+                <th>Network</th>
+                <th>Gen</th>
+                <th>Pop</th>
+                <th>Move Lim.</th>
+                <th>Elite</th>
+                <th>Mutate Type</th>
+                <th>P(mut)</th>
+                <th>P(cross)</th>
+                <th>Min. Weight</th>
+                <th>Max. Weight</th>
+                <th>Run Count</th>
+                <th>Run IDs</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <th>Trail</th>
+                <th>Network</th>
+                <th>Gen</th>
+                <th>Pop</th>
+                <th>Move Lim.</th>
+                <th>Elite</th>
+                <th>Mutate Type</th>
+                <th>P(mut)</th>
+                <th>P(cross)</th>
+                <th>Min. Weight</th>
+                <th>Max. Weight</th>
+                <th>Run Count</th>
+                <th>Run IDs</th>
+            </tr>
+            <tr>
+                <th colspan="13" class="ts-pager" data-column"0">
+                    <button type="button" class="btn first">
+                        <span class="glyphicon glyphicon-step-backward"></span>
+                    </button>
+                    <button type="button" class="btn prev">
+                        <span class="glyphicon glyphicon-backward"></span>
+                    </button>
+                    <span class="pagedisplay"></span>
+                    <button type="button" class="btn next">
+                        <span class="glyphicon glyphicon-forward"></span>
+                    </button>
+                    <button type="button" class="btn last">
+                        <span class="glyphicon glyphicon-step-forward"></span>
+                    </button>
+                    <select class="pagesize input-mini" title="Select page size">
+                        <option selected="selected" value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="40">40</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <select class="pagenum input-mini" title="Select page number"></select>
+                </th>
+            </tr>
+        </tfoot>
+        <tbody>
+        {% for curr_line in table_data %}
+        <tr>
+
+                <td>{{ curr_line[1]  }}</td>
+                <td>{{ curr_line[2]  }}</td>
+                <td>{{ curr_line[3]  }}</td>
+                <td>{{ curr_line[4]  }}</td>
+                <td>{{ curr_line[5]  }}</td>
+                <td>{{ curr_line[6]  }}</td>
+                <td>{{ curr_line[7]  }}</td>
+                <td>{{ curr_line[8]  }}</td>
+                <td>{{ curr_line[9]  }}</td>
+                <td>{{ curr_line[10]  }}</td>
+                <td>{{ curr_line[11]  }}</td>
+                <td>{{ curr_line[12]|length  }}</td>
+                <td>
+                {% for curr_run_id in curr_line[12] %}
+                    <a href="{{ url_for('plot_by_run_id', run_id=curr_run_id) }}">{{ curr_run_id }}</a>&nbsp;
+                {% endfor %}
+                </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
 
 
 {% endblock %}
