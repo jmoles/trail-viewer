@@ -2,6 +2,7 @@ import datetime
 import json
 import math
 import os
+import re
 import base64
 from flask import Flask, render_template, request, make_response, Response, url_for
 import mimetypes
@@ -50,6 +51,66 @@ def inline_img_by_conf_id(conf_id, stat_group="food"):
         stat_group=stat_group, show_title=False)
 
     return base64.b64encode(output.getvalue()), plot_title
+
+def get_trails(trail_id):
+    """ Fetches the trails and adds helper information for functions.
+    Returns a table of data with code 200 or error page with code 400."""
+    raw_data = pgdb.getTrails()
+
+    # Check that the user requested a valid trail.
+    if trail_id > 0 and trail_id not in raw_data:
+        title="Invalid Trail"
+        error = """
+        The trail id {0} that you have requested is not valid!""".format(
+            trail_id,
+            url_for('network_by_id'))
+        fix = """
+        Want to try browsing the <a href="{0}">list</a> of valid trails?
+        """.format(url_for('trail_by_id'))
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+
+    # Trail ID is valid.
+    # Calculate the food count and trail dimension str.
+    table_data = {}
+    for curr_key, curr_val in raw_data.items():
+        new_dict = curr_val
+
+        new_dict["food_count"] = (
+            [x for y in curr_val["data"] for x in y].count(1))
+        new_dict["dimension_str"] = "{0} x {1}".format(
+            len(curr_val["data"][0]),
+            len(curr_val["data"]))
+
+        table_data[curr_key] = new_dict
+
+    return table_data, 200
+
+def are_actions_valid(actions):
+    """ Verifies that the actions for the trail are numbers (0-3) or
+    letters (L,R,F,N) with no other items."""
+
+    ACTIONS_RE = "^[0123FLRNflrn]+$"
+
+    if re.match(ACTIONS_RE, actions):
+        return True
+    else:
+        return False
+
+def render_error(code=400,
+    title = 'Unknown Error' ,
+    error = 'An unknown error has occurred. Please try your request later.',
+    fix = 'Would you like to go <a href="/">home</a>?'):
+    """ Function that returns a render_template of error page. """
+
+    if code == 400:
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+
 
 ### End of Helper Functions.
 
@@ -203,39 +264,12 @@ def config_by_id(config_id):
 def trail_by_id(trail_id):
     start = datetime.datetime.now()
 
-    raw_data = pgdb.getTrails()
+    table_data, return_code = get_trails(trail_id)
 
-    # Check that the user requested a valid trail.
-    if trail_id > 0 and trail_id not in raw_data:
-        title="Invalid Trail"
-        error = """
-        The trail id {0} that you have requested is not valid!""".format(
-            trail_id,
-            url_for('network_by_id'))
-        fix = """
-        Want to try browsing the <a href="{0}">list</a> of valid trails?
-        """.format(url_for('trail_by_id'))
-        return render_template('400.html',
-            title=title,
-            error=error,
-            fix=fix), 400
-
-    # Trail ID is valid.
-    # Calculate the food count and trail dimension str.
-    table_data = {}
-    for curr_key, curr_val in raw_data.items():
-        new_dict = curr_val
-
-        new_dict["food_count"] = (
-            [x for y in curr_val["data"] for x in y].count(1))
-        new_dict["dimension_str"] = "{0} x {1}".format(
-            len(curr_val["data"][0]),
-            len(curr_val["data"]))
-
-        table_data[curr_key] = new_dict
-
-    # Render the table or render the trail.
-    if trail_id < 0:
+    # Render the error, table, or render the trail.
+    if return_code == 400:
+        return table_data, return_code
+    elif trail_id < 0:
         # List a table of all the trails.
         finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
@@ -457,6 +491,49 @@ def img_by_run_id(run_id, ext="png", stat_group="food", group=False,
     response.headers['Content-Disposition'] = (
         'filename=plot.{0}'.format(ext))
     return response
+
+@app.route("/animate/<int:trail_id>/<actions>")
+def animate_trail(trail_id, actions):
+    """ Animates a trail given a trail ID and a actions to take. The trail_id
+    must be a valid ID in the database. Actions can be in the form of letters
+    or numbers with the following enumeration:
+
+        * 0 / N - No move
+        * 1 / L - Left turn
+        * 2 / R - Right turn
+        * 3 / F - Forward move
+
+    """
+    start = datetime.datetime.now()
+
+    # Clean up the actions string.
+    actions_clean = actions.strip()
+
+    # Fetch the trails for navigating. If we get error code 400 here,
+    # invalid trail was specified so error out.
+    trail_data, return_code = get_trails(trail_id)
+
+    if return_code == 400:
+        return table_data, return_code
+
+    if not are_actions_valid(actions_clean):
+        return render_error(400,
+            "Invalid Actions Provided",
+            "The actions you have provided contain invalid characters.",
+            "Ensure the actions string contains only 0,1,2,3,F,L,R, and N.")
+
+    # Convert the actions to numbers.
+    actions_clean = actions_clean.upper().replace(
+        "F", "3").replace("L", "1").replace("R", "2").replace("N", "0")
+
+
+    finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+    return render_template(
+        "animate_trail.html",
+        trail_data=trail_data[trail_id],
+        time_sec=finish_time_s,
+        actions=actions_clean)
 
 
 if __name__ == '__main__':

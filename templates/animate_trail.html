@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% set active_page = "trail_by_id" %}
 
 {% block title %}
-{{ trail_data["name"]|title }}
+{{ "Animate Trail"|title }}
 {% endblock %}
 
 {% block head %}
@@ -13,7 +12,7 @@ window.onload = function() {
         "trail_canvas_container_dojo_grid",
         "trail_canvas_container_dojo_squares",
         "trail_canvas_container_dojo_ant",
-        "");
+        "{{ actions }}" );
 }
 </script>
 {% endblock %}
@@ -23,34 +22,13 @@ window.onload = function() {
 <small>Used for <a href="{{ url_for('run_listing')}}">{{ num_runs }}</a> runs</small>
 {% endblock %}
 
-<!-- TODO: Finish this stuff -->
 {% block content %}
-<h2>Configuration</h2>
-<div class="row">
-    <dl class="dl-horizontal">
-        <dt>Trail ID</dt>
-            <dd>{{ id }}</dd>
-        <dt>Trail Name</dt>
-            <dd>{{ trail_data["name"] }}</dd>
-        <dt>Food</dt>
-            <dd>{{ trail_data["food_count"] }}</dd>
-        <dt>Dimensions</dt>
-            <dd>{{ trail_data["dimension_str"] }}</dd>
-        <dt>Recommended Moves</dt>
-            <dd>{{ trail_data["moves"] }}</dd>
-    </dl>
-</div>
 
-<h2>Layout</h2>
+<h2>Trail</h2>
 <div class="row" id="trail_view">
     <div id="trail_canvas_container_dojo_grid"></div>
     <div id="trail_canvas_container_dojo_squares"></div>
     <div id="trail_canvas_container_dojo_ant"></div>
-</div>
-
-<h2>Raw Data</h2>
-<div class="row">
-    <div>[{{ trail_data["data"]|join(",<br />")|safe }}]</div>
 </div>
 {% endblock %}
 

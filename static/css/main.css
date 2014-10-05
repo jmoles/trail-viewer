@@ -9,12 +9,20 @@ ul.filter_listing li{
   display: inline;
 }
 
+div#trail_view div#trail_canvas_container_dojo_grid {
+	position: absolute;
+	z-index: 5;
+}
 
+div#trail_view div#trail_canvas_container_dojo_squares {
+	position: absolute;
+	z-index: 0;
+}
 
-
-
-
-
+div#trail_view div#trail_canvas_container_dojo_ant {
+	position: absolute;
+	z-index: 10;
+}
 
 
 
