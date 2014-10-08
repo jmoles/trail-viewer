@@ -297,11 +297,12 @@ def trail_by_id(trail_id):
 @app.route('/trail/sql')
 def trail_sql():
 
-    trail_data = pgdb.getTrailSQL()
+    trail_data = sorted(pgdb.getTrailSQL())
 
     trail_strs = ""
     for curr_trail in trail_data:
-        trail_strs += "(DEFAULT, '{0}', {1}, {2}, '{3}'),\n".format(
+        trail_strs += "({0}, '{1}', {2}, {3}, '{4}'),\n".format(
+            curr_trail[0],
             curr_trail[1],
             curr_trail[2],
             curr_trail[3],
