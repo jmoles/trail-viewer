@@ -1,0 +1,13 @@
+uwsgi:
+    socket: /tmp/chem-viewer.socket
+    uid: www-data
+    gid: www-data
+    plugin: python
+    wsgi-file: /usr/share/nginx/html/chem-viewer/app.py
+    python-path: /usr/share/nginx/html/chem-viewer
+    callable: app
+    env: PSYCOPG2_DB_PASS=password
+    env: PSYCOPG2_DB_HOST=dbhost.example.com
+    env: PSYCOPG2_DB_USER=mydatabase
+    env: PSYCOPG2_DB_PORT=5432
+    env: PSYCOPG2_DB_DB=user
