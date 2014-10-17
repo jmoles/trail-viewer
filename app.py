@@ -11,6 +11,12 @@ from werkzeug.datastructures import ImmutableMultiDict
 from GATools.DBUtils import DBUtils
 from GATools.plot.chart import chart
 
+if os.environ.get('ENABLE_NEW_RELIC', 'False') in (['True', 'true', 'TRUE']):
+    import newrelic.agent
+    newrelic.agent.initialize(os.environ.get('NEW_RELIC_CONFIG_FILE', 
+        'newrelic.ini'))
+
+
 DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
     ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False

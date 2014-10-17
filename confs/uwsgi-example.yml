@@ -1,13 +1,19 @@
 uwsgi:
     socket: /tmp/chem-viewer.socket
+    chdir: /usr/share/nginx/html/chem-viewer
+    enable-threads: true
+    single-interpreter: true
     uid: www-data
     gid: www-data
     plugin: python
     wsgi-file: /usr/share/nginx/html/chem-viewer/app.py
     python-path: /usr/share/nginx/html/chem-viewer
+    home: /usr/share/nginx/html/chem-viewer/chem-env
     callable: app
     env: PSYCOPG2_DB_PASS=password
     env: PSYCOPG2_DB_HOST=dbhost.example.com
     env: PSYCOPG2_DB_USER=mydatabase
     env: PSYCOPG2_DB_PORT=5432
     env: PSYCOPG2_DB_DB=user
+    env: NEW_RELIC_CONFIG_FILE=newrelic.ini
+    env: ENABLE_NEW_RELIC=False
