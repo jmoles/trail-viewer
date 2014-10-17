@@ -7,7 +7,12 @@
 {% block head %}
 {{ super() }}
 <script>
+
 window.onload = function() {
+    $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+
+    loadCookieConf();
+
     animate_trail({{ trail_data["data"] }},
         "trail_canvas_container_dojo_grid",
         "trail_canvas_container_dojo_squares",
@@ -19,16 +24,42 @@ window.onload = function() {
 
 {% block header_text %}
 {{ trail_data["name"]|title }}
-<small>Used for <a href="{{ url_for('run_listing')}}">{{ num_runs }}</a> runs</small>
 {% endblock %}
 
 {% block content %}
 
-<h2>Trail</h2>
-<div class="row" id="trail_view">
-    <div id="trail_canvas_container_dojo_grid"></div>
-    <div id="trail_canvas_container_dojo_squares"></div>
-    <div id="trail_canvas_container_dojo_ant"></div>
+<div>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Statistics</h2>
+            <dl class="dl-horizontal">
+                <dt><span href="#" data-toggle="tooltip" title="(Taken / Total)">Moves</span></dt>
+                    <dd id="moves_taken_count"></dd>
+                <dt><span href="#" data-toggle="tooltip" title="(Forward / Left / Right / None)">Moves Type</span></dt>
+                    <dd id="moves_type_count"></dd>
+                <dt><span href="#" data-toggle="tooltip" title="(Consumed / Remaining / Total)">Food</span></dt>
+                    <dd id="food_consumed_count"></dd>
+            </dl>
+        </div>
+        <div class="col-md-6">
+            <h2>Controls</h2>
+            <dl class="dl-horizontal">
+                <dt>Speed Adjustment</dt>
+                <dd>
+                    <button class="btn" id="speed_back_button" type="button" onclick="agentSpeedUp()"> <span class="glyphicon glyphicon-backward" data-toggle="tooltip" title="Slower"> </span> </button>
+                    <button class="btn" id="speed_forward_button" type="button" onclick="agentSlowDown()"> <span class="glyphicon glyphicon-forward" data-toggle="tooltip" title="Faster"> </span> </button>
+                </dd>
+            </dl>
+
+        </div>
+    </div>
+    <div class="row">
+        <div id="trail_view">
+            <div id="trail_canvas_container_dojo_grid"></div>
+            <div id="trail_canvas_container_dojo_squares"></div>
+            <div id="trail_canvas_container_dojo_ant"></div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

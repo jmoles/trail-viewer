@@ -26,6 +26,9 @@ ANT_ACTIONS["left"] = "1";
 ANT_ACTIONS["right"] = "2";
 ANT_ACTIONS["forward"] = "3";
 
+var MAX_FOOD = 0;
+var MAX_MOVES = 0;
+
 var food_consumed = 0;
 
 var MAX_X = 0;
@@ -34,13 +37,22 @@ var MAX_Y = 0;
 var FOOD_PELLETS = [];
 var BOX_IDS = [];
 
-var ANIM_SPEED = 500;
+var DEFAULT_ANIM_SPEED = 500;
+var SPEED_INCREMENT = 50;
+var MAX_SPEED = SPEED_INCREMENT * 20;
+
+var COOKIE_CONF = undefined;
+var CURRENT_COOKIE_VERSION = 1;
+
+var COOKIE_PATH_OPTS = {expires: 7, path: '/'};
+
+var MOVES_COUNTS = [0, 0, 0, 0];
 
 // Function from http://code.voidblossom.com/simple-animation-sequence-extension-raphael/
 Raphael.el.animateSequence = function animateSequence( sequenceArray, finalCallback )
 {
     var nextIndex = 0;
- 
+
     //  Please note that cycle will always be invoked in the context of the element being animated (i.e., 'this
     var cycle = function()
     {
@@ -75,8 +87,59 @@ Raphael.el.animateSequence = function animateSequence( sequenceArray, finalCallb
                             cycle.call( this );
                         } );
     }
- 
+
     cycle.call( this ); //  start the sequence up
+}
+
+function loadCookieConf() {
+    $.cookie.json = true;
+    COOKIE_CONF = $.cookie('maze_conf');
+    if (COOKIE_CONF === undefined || COOKIE_CONF["version"] < CURRENT_COOKIE_VERSION) {
+        COOKIE_CONF = {
+            "version" : CURRENT_COOKIE_VERSION,
+            "maze_options" : {
+                "speed" : DEFAULT_ANIM_SPEED
+            }
+        };
+
+        $.cookie('maze_conf', COOKIE_CONF, COOKIE_PATH_OPTS);
+    }
+}
+
+function agentSpeedUp() {
+    speedSharedOps(COOKIE_CONF["maze_options"]["speed"] + SPEED_INCREMENT);
+}
+
+function agentSlowDown() {
+    speedSharedOps(COOKIE_CONF["maze_options"]["speed"] - SPEED_INCREMENT);
+}
+
+function speedSharedOps(new_speed) {
+    // Do corner case checking and disable buttons if needed.
+    if (new_speed <= SPEED_INCREMENT) {
+        // Speed is below an increment.
+        // Set to minimum and disable the lower button.
+        // Set it to minimum increment.
+        new_speed = SPEED_INCREMENT;
+        $("#speed_forward_button").addClass("disabled");
+    } else if ((new_speed - SPEED_INCREMENT) >= 0) {
+        // Can do at least one more decrement.
+        $("#speed_forward_button").removeClass("disabled");
+    }
+
+    if (new_speed >= MAX_SPEED) {
+        // Speed is over the max, so disable going slower.
+        new_speed = MAX_SPEED;
+        $("#speed_back_button").addClass("disabled");
+    } else if ((new_speed + SPEED_INCREMENT ) < MAX_SPEED) {
+        // Speed is back within range so enable again.
+        $("#speed_back_button").removeClass("disabled");
+    }
+
+    COOKIE_CONF["maze_options"]["speed"] = new_speed;
+
+    $.cookie('maze_conf', COOKIE_CONF, COOKIE_PATH_OPTS);
+
 }
 
 
@@ -106,7 +169,7 @@ function buildAntStr(x, y, angleR) {
     x3 = x_offset + scale * (shift_amt + 0.25 * Math.cos(angleR) - -0.25 * Math.sin(angleR));
     y3 = y_offset + scale * (shift_amt + -0.25 * Math.cos(angleR) + 0.25 * Math.sin(angleR));
 
-    ant_str = "M" + x1 + "," + y1 + 
+    ant_str = "M" + x1 + "," + y1 +
     "L" + x2 + "," + y2 +
     "L" + x3 + "," + y3 + "z";
 
@@ -116,7 +179,7 @@ function buildAntStr(x, y, angleR) {
 function buildRotateString(x, y, angleD) {
     var ant_str;
 
-    ant_str = "r" + angleD + "," + 
+    ant_str = "r" + angleD + "," +
     (BOX_SIZE / 2 ) +  "," +
     (BOX_SIZE / 2 );
 
@@ -124,7 +187,7 @@ function buildRotateString(x, y, angleD) {
 }
 
 function buildMoveString(x_dir, y_dir) {
-    var ant_str = "T" + 
+    var ant_str = "T" +
     x_dir * BOX_SIZE + "," +
     y_dir * BOX_SIZE;
 
@@ -185,6 +248,7 @@ function fill_squares(paper_r, x_dim, y_dim, trail_data) {
                         stroke: "black"
                     });
                     FOOD_PELLETS[y_idx][x_idx] = c.id;
+                    MAX_FOOD = MAX_FOOD + 1;
                     break;
                 case GRID_VALS["best-route"]:
                     r.attr({fill: COLORS["best-route"]});
@@ -195,13 +259,16 @@ function fill_squares(paper_r, x_dim, y_dim, trail_data) {
                 case GRID_VALS["history"]:
                     r.attr({fill: COLORS["history"]});
                     break;
-            };            
+            };
         }
     }
 
 };
 
 function animate_ant(ant_p, grid_p, fill_p, x_dim, y_dim, trail_data, actions) {
+
+    // Set the number of moves
+    MAX_MOVES = actions.length;
 
     // Find the initial position of the ant.
     var x_idx, y_idx;
@@ -240,18 +307,42 @@ function animate_ant(ant_p, grid_p, fill_p, x_dim, y_dim, trail_data, actions) {
     ant_e.attr({fill: "black"});
 
     if (actions) {
+        // Fill in the preliminary text
         single_ant_anim(grid_p, fill_p, ant_e, ant_x, ant_y, ant_deg, trail_data, actions, 0);
     }
-    
+
 };
 
 // Recursive call to animate the ant. Recursive to make animations sequential.
 function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx)
 {
+
+    // Update the text statistics
+    var moves_taken = 0;
+    for (var i=0, len=MOVES_COUNTS.length; i<len; i++) {
+        moves_taken += MOVES_COUNTS[i];
+    }
+
+    console.log(moves_taken);
+
+    $("#food_consumed_count").text(
+        food_consumed + " / " +
+        (MAX_FOOD - food_consumed) + " / " + MAX_FOOD);
+    $("#moves_type_count").text(
+        MOVES_COUNTS[ANT_ACTIONS["forward"]] + " / " +
+        MOVES_COUNTS[ANT_ACTIONS["left"]] + " / " +
+        MOVES_COUNTS[ANT_ACTIONS["right"]] + " / " +
+        MOVES_COUNTS[ANT_ACTIONS["none"]])
+    $("#moves_taken_count").text(moves_taken + " / " + MAX_MOVES);
+
+
     if (actions_idx >= actions.length) {
         return;
     }
     else {
+        // Count this as a move.
+        MOVES_COUNTS[actions[actions_idx]] = MOVES_COUNTS[actions[actions_idx]] + 1 ;
+
         // Determine which action to take.
         switch(actions[actions_idx]) {
             case ANT_ACTIONS["left"]:
@@ -260,7 +351,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 if (ant_deg == -90) {
                     ant_deg = 270;
                 }
-                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "-90")}, ANIM_SPEED, "linear", function() {
+                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "-90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
                     single_ant_anim(grid_p, fill_p, this, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx + 1);
                 });
                 break;
@@ -272,7 +363,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 } else if (ant_deg == 360 + 90) {
                     ant_deg = 90;
                 }
-                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "90")}, ANIM_SPEED, "linear", function() {
+                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
                     single_ant_anim(grid_p, fill_p, this, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx + 1);
                 });
                 break;
@@ -319,17 +410,17 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 }
 
                 // Prepare the ant animation to sync other animations with it.
-                var ant_anim = Raphael.animation({transform: "..." + buildMoveString(x_disp, y_disp)}, ANIM_SPEED, "linear", function() {
+                var ant_anim = Raphael.animation({transform: "..." + buildMoveString(x_disp, y_disp)}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
                     single_ant_anim(grid_p, fill_p, this, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx + 1);
                 });
                 // Do animation for the food (if present) and box. This is in new box.
                 if (trail_data[ant_y][ant_x] == GRID_VALS["food"]) {
                     var food_id = fill_p.getById(FOOD_PELLETS[ant_y][ant_x]);
                     food_consumed = food_consumed + 1;
-                    food_id.animateWith(ant_id, ant_anim, {opacity: 0}, ANIM_SPEED, "linear");
+                    food_id.animateWith(ant_id, ant_anim, {opacity: 0}, COOKIE_CONF["maze_options"]["speed"], "linear");
                 }
                 var box_id = fill_p.getById(BOX_IDS[ant_y][ant_x]);
-                box_id.animateWith(ant_id, ant_anim, {fill: COLORS["history"]}, ANIM_SPEED, "linear");
+                box_id.animateWith(ant_id, ant_anim, {fill: COLORS["history"]}, COOKIE_CONF["maze_options"]["speed"], "linear");
 
 
 
