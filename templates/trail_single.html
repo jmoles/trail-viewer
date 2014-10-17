@@ -20,7 +20,7 @@ window.onload = function() {
 
 {% block header_text %}
 {{ trail_data["name"]|title }}
-<small>Used for <a href="{{ url_for('run_listing')}}">{{ num_runs }}</a> runs</small>
+<small><a href="{{ url_for('run_listing', trails_id=id)}}">Runs</a> with this trail</small>
 {% endblock %}
 
 <!-- TODO: Finish this stuff -->

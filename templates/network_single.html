@@ -23,7 +23,8 @@ Network Configuration {{ network_id }}
 {% endblock %}
 
 {% block header_text %}
-Network {{ network_id }} <small>Used for {{ num_runs }} runs</small>
+Network {{ network_id }}
+<small><a href="{{ url_for('run_listing', networks_id=network_id)}}">Runs</a> with this network</small>
 {% endblock %}
 
 <!-- TODO: Finish this stuff -->
