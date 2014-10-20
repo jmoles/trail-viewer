@@ -5,6 +5,8 @@ import base64
 import matplotlib.pyplot as pyplot
 import matplotlib.backends.backend_agg as pltagg
 import numpy as np
+import plotly.plotly as py
+from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line
 
 from ..DBUtils import DBUtils
 
@@ -19,6 +21,125 @@ class chart:
         self.__same_run_id_cache  = {}
         self.__run_info_cache     = {}
         self.__gen_data_cache     = {}
+
+        # Sign in to plot.ly.
+        py.sign_in("jmoles", "yjmmis1cvi")
+
+    def plotly_chart_set(self, run_id, run_info=None):
+        # Fetch this run's information, if not provided.
+        if run_info is None:
+            run_info = self.__pgdb.fetchRunInfo(run_id)[run_id]
+
+        # Determine the maximum amount of food and moves possible and number
+        # of generations.
+        trail_data = self.__pgdb.getTrailData(run_info["trails_id"])[0]
+        max_food = np.bincount(np.squeeze(np.asarray(trail_data.flatten())))[1]
+        num_gens   = run_info["generations"]
+        max_moves  = np.array(run_info["moves_limit"])
+
+        # Fetch the data on the run.
+        gens_data = self.__pgdb.fetchRunGenerations([run_id])[run_id]
+
+        x = np.linspace(0, num_gens - 1, num=num_gens)
+
+        # Settings used for plotting.
+        chart_set_config = {
+            "food" : {
+                "db_key" : "food",
+                "stats" : ["max", "avg", "std"],
+                "title" : "Food vs. Generations for Run ID {0}",
+                "type" : Scatter,
+                "plot-mode" : "lines",
+                "xaxis" : "Generations",
+                "yaxis" : "Food Consumed",
+                "max-line" : max_food,
+                "max-title" : "Available"
+            },
+            "moves-taken" : {
+                "db_key" : "moves",
+                "stats" : ["min", "avg", "std"],
+                "title" : "Moves Taken vs. Generations for Run ID {0}",
+                "type" : Scatter,
+                "plot-mode" : "lines",
+                "xaxis" : "Moves Taken",
+                "yaxis" : "Food Consumed",
+                "max-line" : max_moves,
+                "max-title" : "Limit"
+            },
+            "moves-dir" : {
+                "db_key" : "moves",
+                "stats" : ["left", "right", "forward", "none"],
+                "title" : "Move Types vs. Generations for Run ID {0}",
+                "type" : Scatter,
+                "plot-mode" : "lines",
+                "xaxis" : "Move Type",
+                "yaxis" : "Food Consumed",
+                "max-line" : None,
+            }
+        }
+
+        plot_urls = {}
+
+        # TODO: Could multithread here to speed things up.
+        for chart, settings in chart_set_config.items():
+            traces_list = []
+
+            # Go through each of the stats and build the traces.
+            for stat in settings["stats"]:
+                data_set = np.zeros((num_gens))
+
+                for curr_gen in range(0, num_gens):
+                    data_set[curr_gen] = (
+                        gens_data[curr_gen]
+                            [settings["db_key"]][stat])
+
+                this_trace = settings["type"](
+                    x=x,
+                    y=data_set,
+                    mode=settings["plot-mode"],
+                    name=stat.title()
+                )
+
+                traces_list.append(this_trace)
+
+            # If desired, add the maximum line.
+            if settings["max-line"] is not None:
+
+                y_val = np.empty(len(x))
+                y_val.fill(settings["max-line"])
+
+                traces_list.append(
+                    settings["type"](
+                        x=x,
+                        y=y_val,
+                        mode="lines",
+                        line={
+                            "dash" : "dash"
+                        },
+                        name=settings["max-title"].title()
+                    )
+                )
+
+            layout = Layout(
+                title=settings["title"].format(run_id),
+                xaxis=XAxis(
+                    title=settings["xaxis"].format(run_id)
+                ),
+                yaxis=YAxis(
+                    title=settings["yaxis"].format(run_id)
+                ),
+
+            )
+
+
+            fig = Figure(data=Data(traces_list), layout=layout)
+            plot_urls[chart] = py.plot(
+                fig,
+                filename="{0}_{1}".format(chart, run_id),
+                fileopt='overwrite',
+                auto_open=False)
+
+        return plot_urls
 
 
     def lineChart(self, run_id, ext="png", stat_group="food",

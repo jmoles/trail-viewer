@@ -13,7 +13,7 @@ from GATools.plot.chart import chart
 
 if os.environ.get('ENABLE_NEW_RELIC', 'False') in (['True', 'true', 'TRUE']):
     import newrelic.agent
-    newrelic.agent.initialize(os.environ.get('NEW_RELIC_CONFIG_FILE', 
+    newrelic.agent.initialize(os.environ.get('NEW_RELIC_CONFIG_FILE',
         'newrelic.ini'))
 
 
@@ -399,39 +399,28 @@ def network_by_id(network_id):
 def plot_by_run_id(run_id):
     start = datetime.datetime.now()
 
-    images_l = []
-
-    ch = chart()
-
-    for c_elem in ("food", "moves", "moves_stats"):
-        output, plot_title = inline_img_by_run_id(
-            run_id=run_id,
-            stat_group=c_elem)
-
-        image_d  = {}
-        image_d["data"]  = output
-        ext_list = ["pdf", "eps", "jpg", "png"]
-        for curr_ext in ext_list:
-            this_url = url_for(
-                'img_by_run_id',
-                run_id=run_id,
-                ext=curr_ext,
-                stat_group=c_elem,
-                group=False,
-                show_title=False)
-            image_d[curr_ext] = this_url
-
-        if c_elem == "food":
-            image_d["title"] = "Food vs. Generations"
-        elif c_elem == "moves":
-            image_d["title"] = "Moves vs. Generations"
-        elif c_elem == "moves_stats":
-            image_d["title"] = " Move Direction vs. Generations"
-        else:
-            image_d["title"] = "Unknown Type"
-        images_l.append(image_d)
-
+    # Grab the run information
     run_information =  pgdb.fetchRunInfo(run_id)[run_id]
+
+    chart_i = chart()
+
+    the_urls = chart_i.plotly_chart_set(run_id, run_information)
+
+    images_l = [
+        {
+            "title": "Food vs. Generations",
+            "url" : the_urls["food"]
+        },
+        {
+            "title": "Moves vs. Generations",
+            "url" : the_urls["moves-taken"]
+        },
+        {
+            "title": "Move Direction vs. Generations",
+            "url" : the_urls["moves-dir"]
+        },
+    ]
+
     run_information["run_date"] = run_information["run_date"].strftime("%c")
     runtime_sec = run_information["runtime"].total_seconds()
     run_information["runtime"] = '{:02}:{:02}:{:02}'.format(

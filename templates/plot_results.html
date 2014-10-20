@@ -66,19 +66,21 @@ Simulation Run {{ run_id }}
 <h2>Charts</h2>
 <div class="row">
     {% for idx in range(images_l|count) %}
-        <div class="col-md-6">
-            <div id="image{{idx}}">
-                <h3>{{ images_l[idx]["title"] }}</h3>
-                <img src="data:image/svg+xml;base64,{{ images_l[idx]["data"] }}" class="img-responsive" />
-            </div>
-
-            <div class="row text-center">
-                <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["pdf"] }}">Download PDF</a></button>
-                <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["eps"] }}">Download EPS</a></button>
-                <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["jpg"] }}">Download JPG</a></button>
-                <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["png"] }}">Download PNG</a></button>
-            </div>
+    <div class="col-md-6">
+        <div id="image{{idx}}">
+            <h3>{{ images_l[idx]["title"] }}</h3>
+            <!-- <iframe  scrolling="no" src="https://plot.ly/~jmoles/1"></iframe> -->
+            <iframe width="100%" height="480" frameborder="0" seamless="seamless" style='border:none'
+                id="igraph" style='border:none' scrolling="no" src="{{ images_l[idx]["url"] }}.embed?width=640&height=480"></iframe>
         </div>
+        <div class="row text-center">
+            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.pdf">Download PDF</a></button>
+            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.svg">Download SVG</a></button>
+            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.jpg">Download JPG</a></button>
+            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.png">Download PNG</a></button>
+        </div>
+
+    </div>
     {% endfor %}
 </div>
 
