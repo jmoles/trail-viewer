@@ -721,28 +721,28 @@ class DBUtils:
             	FROM run_config
             	WHERE
             	    trails_id =  (SELECT trails_id FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    mutate_id =  (SELECT mutate_id FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    generations =  (SELECT generations FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    population =  (SELECT population FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    moves_limit =  (SELECT moves_limit FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    elite_count =  (SELECT elite_count FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    p_mutate =  (SELECT p_mutate FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    p_crossover =  (SELECT p_crossover FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    weight_min =  (SELECT weight_min FROM
-                        run_config WHERE id = 474) AND
+                        run_config WHERE id = %s) AND
             	    weight_max =  (SELECT weight_max FROM
-                        run_config WHERE id = 474) AND
-            	    networks_id IN (29, 30, 31, 32, 33, 34, 35, 36, 37)) AND
+                        run_config WHERE id = %s) AND
+            	    networks_id IN %s) AND
             generations.generation = (SELECT generations FROM
-                run_config WHERE id = 474) - 1
+                run_config WHERE id = %s) - 1
             ORDER BY networks.dl_length,
             generations.food_max,
             generations.moves_min;""", curs_tuple)
@@ -762,6 +762,8 @@ class DBUtils:
                     ret_val[dl_length] = []
 
                 ret_val[dl_length].append(temp_tuple)
+
+            print ret_val
 
             return ret_val
 

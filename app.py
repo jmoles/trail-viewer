@@ -543,11 +543,6 @@ def sweep_chart(config_id):
             config_info["max_food"])
 
         # Have the data. Now need to generate a plot.
-        images_l = [{
-            "title" : "My plot",
-            "url" : "http://www.example.com"
-        }]
-
         images_l = [
             {
                 "title": "Food vs. Generations",
