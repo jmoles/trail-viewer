@@ -21,6 +21,14 @@ DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
     ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False
 
+NETWORK_SWEEP_GROUPS = [
+    [2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [11, 12, 13, 14, 15, 16, 17, 18, 19],
+    [20, 21, 22, 23, 24, 25, 26, 27, 28],
+    [29, 30, 31, 32, 33, 34, 35, 36, 37],
+    [38]
+]
+
 app = Flask(__name__)
 
 pgdb = DBUtils()
@@ -37,16 +45,6 @@ def str_to_bool(s_in):
         return True
     else:
         return False
-
-def inline_img_by_run_id(run_id, stat_group="food"):
-    """ Generates a base64 encoded svg of line chart by line id."""
-
-    chart_inst = chart()
-
-    output, plot_title = chart_inst.lineChart(run_id, "svg",
-        stat_group=stat_group, group=False, title=False)
-
-    return base64.b64encode(output.getvalue()), plot_title
 
 def inline_img_by_conf_id(conf_id, stat_group="food"):
     """ Generates a base64 encoded svg of line chart by conf id."""
@@ -243,6 +241,16 @@ def config_by_id(config_id):
 
     config_info =  pgdb.fetchConfigInfo(config_id)
 
+    # Determine the sweep URL, if this config_id is a network in the group.
+    if (config_info["network_id"] in
+        [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
+        sweep_url_t = (
+            ("network",
+                url_for('sweep_chart', config_id=config_id, sweep="network")),
+                )
+    else:
+        sweep_url_t = None
+
     trail_name   = pgdb.getTrails()[config_info["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[config_info["networks_id"]]
     mutate_name  = pgdb.getMutates()[config_info["mutate_id"]]
@@ -263,7 +271,8 @@ def config_by_id(config_id):
         trail_name     = trail_name,
         network_name   = network_name,
         mutate_name    = mutate_name,
-        table_data     = table_data)
+        table_data     = table_data,
+        sweep_url_t    = sweep_url_t)
 
 @app.route('/trail', defaults={'trail_id' : -1})
 @app.route('/trail/<int:trail_id>')
@@ -402,9 +411,7 @@ def plot_by_run_id(run_id):
     # Grab the run information
     run_information =  pgdb.fetchRunInfo(run_id)[run_id]
 
-    chart_i = chart()
-
-    the_urls = chart_i.plotly_chart_set(run_id, run_information)
+    the_urls = chart.plotly_single_run_set(run_id, run_information)
 
     images_l = [
         {
@@ -416,7 +423,7 @@ def plot_by_run_id(run_id):
             "url" : the_urls["moves-taken"]
         },
         {
-            "title": "Move Direction vs. Generations",
+            "title": "Move Type vs. Generations",
             "url" : the_urls["moves-dir"]
         },
     ]
@@ -453,34 +460,6 @@ def img_by_conf_id(config_id, ext="png", stat_group ="food"):
 
     output, plot_title = chart_inst.line_by_config_id(config_id, ext,
         stat_group=stat_group, show_title=print_title)
-
-    response = make_response(output.getvalue())
-    response.mimetype = mimetypes.guess_type("plot.{0}".format(ext))[0]
-    response.headers['Content-Disposition'] = (
-        'filename=plot.{0}'.format(ext))
-    return response
-
-@app.route("/plot/img/<int:run_id>/<ext>/<stat_group>/<group>")
-def img_by_run_id(run_id, ext="png", stat_group="food", group=False,
-    chart_type="line"):
-    """ Plots an image of all run_ids that match run_id.
-
-    The returned image will be of type ext.
-    Valid stat_group for plotting are:
-        food, moves, moves_stats
-    If group is True, will take the average across all runs with same
-        run parameters as run_id.
-
-    """
-
-    chart_inst = chart()
-
-    # Optional paramaters
-    print_title = str_to_bool(
-        request.args.get('show_title', default=True))
-
-    output, _ = chart_inst.lineChart(run_id, ext,
-        stat_group=stat_group, group=group, title=print_title)
 
     response = make_response(output.getvalue())
     response.mimetype = mimetypes.guess_type("plot.{0}".format(ext))[0]
@@ -530,6 +509,69 @@ def animate_trail(trail_id, actions):
         trail_data=trail_data[trail_id],
         time_sec=finish_time_s,
         actions=actions_clean)
+
+@app.route("/sweep/<int:config_id>")
+def sweep_chart(config_id):
+    """ Generates sweep charts for given config ID.
+        User can also provide "sweep" that is one of the following:
+            * network - Sweeps across network types.
+            * moves_limit - The limit of moves.
+    """
+    start = datetime.datetime.now()
+
+    sweep = request.args.get('sweep', default="network")
+
+    # Get the configuration of this run.
+    config_info =  pgdb.fetchConfigInfo(config_id)
+
+    if sweep == "network":
+        # Sweep across the networks
+
+        # Constant groups used sweep networks.
+        # TODO: Query this from database with RE rather than static.
+
+
+        # Find the network group that this config is part of.
+        group = [x for x in NETWORK_SWEEP_GROUPS if config_info["networks_id"] in x][0]
+
+        # Get the sweep data.
+        sweep_data =  pgdb.fetch_run_config_sweep_by_network(config_id, group)
+
+        the_urls = chart.sweep_charts(
+            sweep_data,
+            config_id,
+            config_info["max_food"])
+
+        # Have the data. Now need to generate a plot.
+        images_l = [{
+            "title" : "My plot",
+            "url" : "http://www.example.com"
+        }]
+
+        images_l = [
+            {
+                "title": "Food vs. Generations",
+                "url" : the_urls["food"]
+            },
+            {
+                "title": "Moves vs. Generations",
+                "url" : the_urls["moves-taken"]
+            },
+        ]
+
+
+    elif sweep == "moves_limit":
+        # Sweep across the limit of moves that can be made.
+        pass
+
+    finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+
+    return render_template(
+        "sweep_results.html",
+        images_l = images_l,
+        time_sec = finish_time_s,
+        )
 
 
 if __name__ == '__main__':

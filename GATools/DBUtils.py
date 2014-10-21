@@ -637,19 +637,31 @@ class DBUtils:
 
         with self.__getCursor() as curs:
             curs.execute("""SELECT
-                trails_id,
-                networks_id,
-                mutate_id,
-                generations,
-                population,
-                moves_limit,
-                elite_count,
-                p_mutate,
-                p_crossover,
-                weight_min,
-                weight_max
+                run_config.trails_id,
+                run_config.networks_id,
+                run_config.mutate_id,
+                run_config.generations,
+                run_config.population,
+                run_config.moves_limit,
+                run_config.elite_count,
+                run_config.p_mutate,
+                run_config.p_crossover,
+                run_config.weight_min,
+                run_config.weight_max,
+                networks.id,
+                networks.name,
+                networks.dl_length,
+                trails.id,
+                trails.name,
+                trails.moves,
+                trails.init_rot,
+                trails.trail_data
                 FROM run_config
-                WHERE id = %s;""", (config_id, ) )
+                INNER JOIN networks
+                ON run_config.networks_id = networks.id
+                INNER JOIN trails
+                ON run_config.trails_id = trails.id
+                WHERE run_config.id = %s;""", (config_id, ) )
 
             result = curs.fetchall()[0]
 
@@ -666,10 +678,92 @@ class DBUtils:
             curr_dict["p_crossover"]     = result[8]
             curr_dict["weight_min"]      = result[9]
             curr_dict["weight_max"]      = result[10]
+            curr_dict["network_id"]      = result[11]
+            curr_dict["network_name"]    = result[12]
+            curr_dict["network_dl_len"]  = result[13]
+            curr_dict["trail_id"]        = result[14]
+            curr_dict["trail_name"]      = result[15]
+            curr_dict["trail_moves"]     = result[16]
+            curr_dict["trail_init_rot"]  = result[17]
+            curr_dict["trail_data"]      = np.matrix(result[18])
+
+            curr_dict["max_food"] = np.bincount(np.squeeze(np.asarray(
+                curr_dict["trail_data"].flatten())))[1]
 
 
         return curr_dict
 
+    def fetch_run_config_sweep_by_network(self, config_id, id_filters):
+        """ Takes a provided config_id and finds other config_ids matching
+        this config_id with just network different. Returns a list of tuples
+        containing the id from run_config table and the networks_id.
+
+        """
+
+        with self.__getCursor() as curs:
+            curs_tuple = (
+                (config_id, ) * 10 +
+                (tuple(id_filters), ) +
+                (config_id, ))
+
+            curs.execute("""SELECT
+            networks.dl_length, generations.food_max,
+            generations.moves_min, run.id
+            FROM run
+            INNER JOIN generations
+            ON run.id = generations.run_id
+            INNER JOIN run_config
+            ON run_config.id = run.run_config_id
+            INNER JOIN networks
+            ON run_config.networks_id = networks.id
+            WHERE run.run_config_id IN (
+            	SELECT id
+            	FROM run_config
+            	WHERE
+            	    trails_id =  (SELECT trails_id FROM
+                        run_config WHERE id = 474) AND
+            	    mutate_id =  (SELECT mutate_id FROM
+                        run_config WHERE id = 474) AND
+            	    generations =  (SELECT generations FROM
+                        run_config WHERE id = 474) AND
+            	    population =  (SELECT population FROM
+                        run_config WHERE id = 474) AND
+            	    moves_limit =  (SELECT moves_limit FROM
+                        run_config WHERE id = 474) AND
+            	    elite_count =  (SELECT elite_count FROM
+                        run_config WHERE id = 474) AND
+            	    p_mutate =  (SELECT p_mutate FROM
+                        run_config WHERE id = 474) AND
+            	    p_crossover =  (SELECT p_crossover FROM
+                        run_config WHERE id = 474) AND
+            	    weight_min =  (SELECT weight_min FROM
+                        run_config WHERE id = 474) AND
+            	    weight_max =  (SELECT weight_max FROM
+                        run_config WHERE id = 474) AND
+            	    networks_id IN (29, 30, 31, 32, 33, 34, 35, 36, 37)) AND
+            generations.generation = (SELECT generations FROM
+                run_config WHERE id = 474) - 1
+            ORDER BY networks.dl_length,
+            generations.food_max,
+            generations.moves_min;""", curs_tuple)
+
+            ret_val = {}
+
+            for record in curs:
+
+                dl_length = record[0]
+                food_max = record[1]
+                moves_min = record[2]
+                run_id = record[3]
+
+                temp_tuple  = (food_max, moves_min, run_id)
+
+                if not ret_val.has_key(dl_length):
+                    ret_val[dl_length] = []
+
+                ret_val[dl_length].append(temp_tuple)
+
+            return ret_val
 
     def fetchConfigRunsInfo(self, config_id):
         """ Generates a table with run_id, run_date, best food, and

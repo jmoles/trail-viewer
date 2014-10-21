@@ -7,6 +7,7 @@ import matplotlib.backends.backend_agg as pltagg
 import numpy as np
 import plotly.plotly as py
 from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line
+import time
 
 from ..DBUtils import DBUtils
 
@@ -14,31 +15,42 @@ class chart:
     def __init__(self):
         self.__pgdb = DBUtils()
 
-        # Fetch some information for later use.
-        self.__network_list_cache = None
-        self.__trail_list_cache   = None
-        self.__trails_cache       = {}
-        self.__same_run_id_cache  = {}
-        self.__run_info_cache     = {}
+        # Caches used for some functions.
         self.__gen_data_cache     = {}
 
-        # Sign in to plot.ly.
-        py.sign_in("jmoles", "yjmmis1cvi")
+    @staticmethod
+    def __generate_plotly_url(fig, **kwargs):
+        """ Returns a ready-to-embed URL to a provided fig.
+        """
 
-    def plotly_chart_set(self, run_id, run_info=None):
+        # Sign in, if necessary.
+        if py.get_credentials()["username"] == "":
+            py.sign_in("jmoles", "yjmmis1cvi")
+
+        return py.plot(
+            fig,
+            auto_open=False,
+            **kwargs)
+
+
+    @staticmethod
+    def plotly_single_run_set(run_id, run_info=None):
+        # Establish a database connection
+        pgdb = DBUtils()
+
         # Fetch this run's information, if not provided.
         if run_info is None:
-            run_info = self.__pgdb.fetchRunInfo(run_id)[run_id]
+            run_info = pgdb.fetchRunInfo(run_id)[run_id]
 
         # Determine the maximum amount of food and moves possible and number
         # of generations.
-        trail_data = self.__pgdb.getTrailData(run_info["trails_id"])[0]
+        trail_data = pgdb.getTrailData(run_info["trails_id"])[0]
         max_food = np.bincount(np.squeeze(np.asarray(trail_data.flatten())))[1]
         num_gens   = run_info["generations"]
         max_moves  = np.array(run_info["moves_limit"])
 
         # Fetch the data on the run.
-        gens_data = self.__pgdb.fetchRunGenerations([run_id])[run_id]
+        gens_data = pgdb.fetchRunGenerations([run_id])[run_id]
 
         x = np.linspace(0, num_gens - 1, num=num_gens)
 
@@ -61,8 +73,8 @@ class chart:
                 "title" : "Moves Taken vs. Generations for Run ID {0}",
                 "type" : Scatter,
                 "plot-mode" : "lines",
-                "xaxis" : "Moves Taken",
-                "yaxis" : "Food Consumed",
+                "xaxis" : "Generations",
+                "yaxis" : "Moves Taken",
                 "max-line" : max_moves,
                 "max-title" : "Limit"
             },
@@ -72,8 +84,8 @@ class chart:
                 "title" : "Move Types vs. Generations for Run ID {0}",
                 "type" : Scatter,
                 "plot-mode" : "lines",
-                "xaxis" : "Move Type",
-                "yaxis" : "Food Consumed",
+                "xaxis" : "Generations",
+                "yaxis" : "Move Type",
                 "max-line" : None,
             }
         }
@@ -81,7 +93,7 @@ class chart:
         plot_urls = {}
 
         # TODO: Could multithread here to speed things up.
-        for chart, settings in chart_set_config.items():
+        for chart_type, settings in chart_set_config.items():
             traces_list = []
 
             # Go through each of the stats and build the traces.
@@ -133,170 +145,105 @@ class chart:
 
 
             fig = Figure(data=Data(traces_list), layout=layout)
-            plot_urls[chart] = py.plot(
-                fig,
-                filename="{0}_{1}".format(chart, run_id),
-                fileopt='overwrite',
-                auto_open=False)
+
+            # Generate the URL.
+            plot_urls[chart_type] = chart.__generate_plotly_url(fig,
+                filename="{0}_{1}".format(chart_type, run_id),
+                fileopt='overwrite',)
 
         return plot_urls
 
+    @staticmethod
+    def sweep_charts(db_data, config_id, max_food):
+        """ Given a set of db_data from
+        DBUtils.fetch_run_config_sweep_by_network along with the config_id,
+        and maximum amount of food, generates a food and moves taken sweep
+        plot.
 
-    def lineChart(self, run_id, ext="png", stat_group="food",
-        stat=None, group=False, title=True):
+        Returns ready to embed URLs.
+        """
+        plot_urls = {}
 
-        if not self.__network_list_cache or not self.__trail_list_cache:
-            self.__cacheInit()
+        chart_set_config = {
+            "food" : {
+                "title" : "Food vs. Generations Sweep",
+                "db-idx" : 0,
+                "val-func" : max,
+                "type" : Scatter,
+                "plot-mode" : "lines",
+                "xaxis" : "Delay Line Length",
+                "yaxis" : "Food Consumed",
+                "max-line" : max_food,
+                "max-title" : "Available",
+                "label" : "max"
+            },
+            "moves-taken" : {
+                "title" : "Moves Taken vs. Generations Sweep",
+                "db-idx" : 1,
+                "val-func" : min,
+                "type" : Scatter,
+                "plot-mode" : "lines",
+                "xaxis" : "Delay Line Length",
+                "yaxis" : "Moves Taken",
+                "label" : "min"
+            },
+        }
 
-        if stat_group == "moves_stats" and stat == None:
-            stat=["left", "right", "forward", "none"]
-        elif stat == None:
-            stat=["min", "max", "avg"]
+        # TODO: Could multithread here to speed things up.
+        for chart_type, settings in chart_set_config.items():
+            traces_list = []
 
-        # If grouping, get all of the run ids.
-        if group:
-            if not self.__same_run_id_cache.has_key(run_id):
-                run_ids_l = self.__pgdb.getSameRunIDs(run_id)
-                self.__same_run_id_cache[run_id] = run_ids_l
-            else:
-                run_ids_l = self.__same_run_id_cache[run_id]
-        else:
-            run_ids_l = [run_id]
+            x_vals = sorted(db_data.keys())
+            y_vals = []
 
-        # Generate the figure and axes common to all of these.
-        fig = pyplot.Figure()
-        axis = fig.add_subplot(1,1,1)
+            for curr_x in x_vals:
+                y_vals.append(settings["val-func"](
+                    [x[settings["db-idx"]] for x in db_data[curr_x]]))
 
-        # Get information on the run
-        ids_search_l = []
-        for curr_id in run_ids_l:
-            if not self.__run_info_cache.has_key(curr_id):
-                ids_search_l.append(curr_id)
+            this_trace = settings["type"](
+                x=x_vals,
+                y=y_vals,
+                mode=settings["plot-mode"],
+                name=settings["label"].title()
+            )
 
-        if len(ids_search_l) > 0:
-            self.__run_info_cache = dict(
-                self.__run_info_cache.items() +
-                self.__pgdb.fetchRunInfo(ids_search_l).items())
+            traces_list.append(this_trace)
 
-        run_info = self.__pgdb.fetchRunInfo(run_id)
+            # If desired, add the maximum line.
+            if "max-line" in settings:
 
-        # Determine the maximum amount of food
-        trail_data = self.__pgdb.getTrails()[run_info[run_id]["trails_id"]]
+                y_val = np.empty(len(x_vals))
+                y_val.fill(settings["max-line"])
 
-        max_food = [x for y in trail_data["data"] for x in y].count(1)
+                traces_list.append(
+                    settings["type"](
+                        x=x_vals,
+                        y=y_val,
+                        mode="lines",
+                        line={
+                            "dash" : "dash"
+                        },
+                        name=settings["max-title"].title()
+                    )
+                )
 
-        # Find the network name, trail name, and number of generations.
-        net_name   = self.__network_list_cache[run_info[run_id]["networks_id"]]
-        trail_name = self.__trail_list_cache[run_info[run_id]["trails_id"]]
-        num_gens   = run_info[run_id]["generations"]
-        max_moves  = np.array(run_info[run_id]["moves_limit"])
+            layout = Layout(
+                title=settings["title"],
+                xaxis=XAxis(title=settings["xaxis"]),
+                yaxis=YAxis(title=settings["yaxis"]),
+            )
 
-        # Take each run and now fetch data for each.
-        ids_search_l = []
-        for curr_id in run_ids_l:
-            if not self.__gen_data_cache.has_key(curr_id):
-                ids_search_l.append(curr_id)
+            fig = Figure(data=Data(traces_list), layout=layout)
 
-        if len(ids_search_l) > 0:
-            self.__gen_data_cache = dict(
-                self.__gen_data_cache.items() +
-                self.__pgdb.fetchRunGenerations(ids_search_l).items())
+            # Generate the URL.
+            plot_urls[chart_type] = chart.__generate_plotly_url(fig,
+                filename="sweep_{0}_{1}".format(chart_type, config_id),
+                fileopt='overwrite')
 
-        gens_data = self.__gen_data_cache
-
-        x = np.linspace(0, num_gens - 1, num=num_gens)
-
-        if group:
-            for curr_stat in stat:
-
-                data_set = np.zeros((num_gens))
-
-                for curr_gen in range(0, num_gens):
-                    if stat_group == "moves_stats":
-                        curr_stat_group = "moves"
-                    else:
-                        curr_stat_group = stat_group
-
-                    this_gen = []
-                    for curr_run in run_ids_l:
-                        this_gen.append(gens_data[curr_run][curr_gen]
-                            [curr_stat_group][curr_stat])
-
-                    data_set[curr_gen] = np.mean(this_gen)
-
-                axis.plot(x, data_set, '-', label=curr_stat.title())
-
-                plot_title = (
-                    "Mean - {0} - {1} g{2}/p{3}".format(
-                        net_name,
-                        trail_name,
-                        num_gens,
-                        run_info[run_id]["population"]))
-
-                if title:
-                    axis.set_title(plot_title)
-
-        else:
-            for curr_run in run_ids_l:
-                for curr_stat in stat:
-
-                    data_set = np.zeros((num_gens))
-
-                    for curr_gen in range(0, num_gens):
-                        if stat_group == "moves_stats":
-                            curr_stat_group = "moves"
-                        else:
-                            curr_stat_group = stat_group
-
-                        data_set[curr_gen] = (
-                            gens_data[curr_run][curr_gen]
-                                [curr_stat_group][curr_stat])
-
-
-                    axis.plot(x, data_set, '-', label=curr_stat.title())
-
-
-                    plot_title = (
-                        "{0} - {1} g{2}/p{3}".format(
-                            net_name,
-                            trail_name,
-                            num_gens,
-                            run_info[run_id]["population"]))
-
-                    if title:
-                        axis.set_title(plot_title)
-
-        # Determine the maximum type to show.
-        if stat_group == "food":
-            axis.plot(x, np.repeat(np.array(max_food), num_gens), 'r--')
-            axis.axis((0, num_gens, 0, max_food + 5))
-            axis.set_ylabel("Food Consumed")
-            axis.set_xlabel("Generations")
-            axis.legend(loc="best")
-        elif stat_group == "moves":
-            axis.plot(x, np.repeat(
-                np.array(max_moves),
-                num_gens), 'r--')
-            axis.axis((0, num_gens, 0, max_moves + 5))
-            axis.set_ylabel("Moves Taken")
-            axis.set_xlabel("Generations")
-            axis.legend(loc="lower left")
-        elif stat_group == "moves_stats":
-            axis.axis((0, num_gens, 0, max_moves + 5))
-            axis.set_ylabel("Moves Taken")
-            axis.set_xlabel("Generations")
-            axis.legend(loc="upper left", ncol=2)
-
-
-        fig.set_facecolor('w')
-
-        return (self.__createImage(fig, ext), len(run_ids_l))
-
+        return plot_urls
 
     def line_by_config_id(self, config_id, ext="png", stat_group="food",
         stat=None, show_title=True):
-        if not self.__network_list_cache or not self.__trail_list_cache:
-            self.__cacheInit()
 
         if stat_group == "moves_stats" and stat == None:
             stat=["left", "right", "forward", "none"]
@@ -312,15 +259,11 @@ class chart:
 
         # Get information on the run
         run_info = self.__pgdb.fetchConfigInfo(config_id)
-
-        # Determine the maximum amount of food
-        trail_data = self.__pgdb.getTrails()[run_info["trails_id"]]
-
-        max_food = [x for y in trail_data["data"] for x in y].count(1)
+        max_food = run_info["max_food"]
 
         # Find the network name, trail name, and number of generations.
-        net_name   = self.__network_list_cache[run_info["networks_id"]]
-        trail_name = self.__trail_list_cache[run_info["trails_id"]]
+        net_name   = run_info["network_name"]
+        trail_name = run_info["trail_name"]
         num_gens   = run_info["generations"]
         max_moves  = np.array(run_info["moves_limit"])
 
@@ -388,102 +331,9 @@ class chart:
             axis.set_xlabel("Generations")
             axis.legend(loc="upper left", ncol=2)
 
-
         fig.set_facecolor('w')
 
         return (self.__createImage(fig, ext), len(run_ids_l))
-
-    def sweepChart(self, ext="png", stat_group="food",
-        stat="max", sweep="dl_length", gp_group=0, net_group=0):
-
-
-        gen_pops = [
-            (200, 300),
-            (400, 150),
-            (600, 100),
-            (800, 75)
-        ]
-
-        networks = [
-            range(2 , 11),
-            range(11, 20),
-            range(20, 29),
-            range(29, 38)
-        ]
-
-        titles = [
-            "MDLn (2n, 5, 4) g{0}/p{1}",
-            "MDLn (2n, 5, 3) g{0}/p{1}",
-            "MDLn (2n, 1, 4) g{0}/p{1}",
-            "MDLn (2n, 1, 3) g{0}/p{1}"
-        ]
-
-        x = range(2, 11)
-
-        fig = pyplot.Figure()
-        axis = fig.add_subplot(1,1,1)
-
-        gen = gen_pops[gp_group][0]
-        pop = gen_pops[gp_group][1]
-
-        max_food = 89
-        max_moves = 325
-
-        for curr_stat in "min", "max", "avg":
-
-            y       = []
-            std_dev = []
-
-            for curr_net in networks[net_group]:
-                curr_run_id = self.__pgdb.getFirstRunId(curr_net, gen, pop,
-                    max_moves=max_moves)
-                y.append(self.__pgdb.getStatAverageLikeRunId(curr_run_id,
-                    group=stat_group, stat=curr_stat, generation=gen - 1))
-
-                if curr_stat == "avg":
-                    # Get the standard deviation
-                    std_dev.append(
-                        self.__pgdb.getStatAverageLikeRunId(curr_run_id,
-                            group=stat_group,
-                            stat="stddev_pop",
-                            generation=gen - 1))
-
-            if curr_stat == "avg":
-                axis.errorbar(x, y,
-                    label=curr_stat.title(),
-                    yerr=std_dev
-                    )
-            else:
-                axis.plot(x, y, label=curr_stat.title())
-
-
-        axis.set_title(titles[net_group].format(gen, pop))
-
-        # Determine the maximum type to show.
-        if stat_group == "food":
-            axis.plot(x, np.repeat(np.array(max_food), len(x)), 'r--')
-            axis.axis((2, 10, 0, max_food + 5))
-            axis.set_ylabel("Food Consumed")
-            axis.set_xlabel("Delay Line Length")
-            axis.legend(loc="best")
-        elif stat_group == "moves":
-            axis.plot(x, np.repeat(
-                np.array(max_moves),
-                len(x)), 'r--')
-            axis.axis((2, 10, 0, max_moves + 5))
-            axis.set_ylabel("Moves Taken")
-            axis.set_xlabel("Delay Line Length")
-            axis.legend(loc="lower left")
-        elif stat_group == "moves_stats":
-            axis.axis((2, 10, 0, max_moves + 5))
-            axis.set_ylabel("Moves Taken")
-            axis.set_xlabel("Delay Line Length")
-            axis.legend(loc="upper left", ncol=2)
-
-        fig.set_facecolor('w')
-
-        return (self.__createImage(fig, ext), len(y))
-
 
     def __createImage(self, fig, ext="jpg"):
         """ Takes a matplotlib fig and generates given ext type.
@@ -510,13 +360,3 @@ class chart:
             canvas.print_jpg(output)
 
         return output
-
-
-    def __cacheInit(self):
-        """ Initalizes the cached information that is common
-        across the functions.
-
-        """
-        # Fetch the network and trail list.
-        self.__network_list_cache = self.__pgdb.getNetworks()
-        self.__trail_list_cache   = self.__pgdb.getTrails()
