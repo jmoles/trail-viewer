@@ -32,14 +32,6 @@ class VALID_COLUMNS:
         "weight_max",
         "RowNumber")
 
-
-class NetworkNotFound(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-
 class DBUtils:
     FILTERS_IDS = [
         "networks_id",
@@ -80,11 +72,6 @@ class DBUtils:
             "host={0} dbname={1} user={2} password={3} port={4}".format(
                 host, db, user, password, port))
 
-        self.__conn        = None
-        self.__cursor      = None
-
-        self.__debug       = debug
-
         self.__pool        = psycopg2.pool.SimpleConnectionPool(
             1,
             10,
@@ -97,39 +84,6 @@ class DBUtils:
             yield con.cursor()
         finally:
             self.__pool.putconn(con)
-
-    def fetchNetworksList(self):
-        net_s = ""
-        net_i = []
-        net_l = []
-
-        with self.__getCursor() as curs:
-            curs.execute("SELECT id, name FROM networks")
-            for idx, name in curs.fetchall():
-                net_s += ("\t" + str(idx) + ": " + name + "\n")
-                net_i.append(idx)
-                net_l.append(name)
-
-        return net_s, net_i, net_l
-
-    def fetchNetworkCmdPrettyPrint(self):
-        net_s, net_i, net_l = self.fetchNetworksList()
-
-        return net_s, net_i
-
-    def fetchTrailList(self):
-        trail_s = ""
-        trail_i = []
-
-        with self.__getCursor() as curs:
-            curs.execute("SELECT id, name, moves FROM trails")
-
-            for idx, name, moves in curs.fetchall():
-                trail_s += ("\t" + str(idx) + ":" + name +
-                    " (" + str(moves) + ")\n")
-                trail_i.append(idx)
-
-        return trail_s, trail_i
 
     def getNetworks(self):
         return self.__genericDictGet("SELECT id, name FROM networks")
@@ -198,7 +152,6 @@ class DBUtils:
                 WHERE run_id IN %s;""", (tuple(run_id), ) )
 
             ret_val  = {}
-            gen_dict = {}
 
             for record in curs:
 
@@ -274,245 +227,6 @@ class DBUtils:
                 ret_val[this_run_id]       = curr_dict
 
         return ret_val
-
-    def getSameRunIDs(self, run_id):
-        """ Takes a single run_id and returns a list of run_ids that
-        were run with the same parameters.
-
-        Returns:
-           list. A list of run_id (as int) that have same parameters as
-               the passed in run_id.
-
-        """
-        with self.__getCursor() as curs:
-            curs.execute("""SELECT id FROM run WHERE run_config_id =
-                (SELECT run_config_id FROM run WHERE id = %s);""",
-                (run_id, ))
-
-            ret_val = []
-
-            for record in curs:
-                ret_val.append(record[0])
-
-
-        return ret_val
-
-    def getMaxFoodAtGeneration(self, run_ids, generation):
-        with self.__getCursor() as curs:
-            curs.execute("""SELECT MAX(food_max) AS food_max
-                FROM generations
-                WHERE generation=%s AND
-                run_id IN %s;""", (generation - 1, tuple(run_ids), ) )
-
-            ret_val = curs.fetchall()[0][0]
-
-        return ret_val
-
-
-    def getNetworkByID(self, network_id):
-        with self.__getCursor() as curs:
-            curs.execute("""SELECT net
-                FROM networks
-                WHERE id=%s;""", (network_id, ) )
-
-            results = curs.fetchall()
-
-        if not results:
-            print "No network was found for network_id {0}".format(network_id)
-            raise NetworkNotFound(network_id)
-
-
-        ret_sio = StringIO.StringIO(results[0][0])
-
-        ret_net = pickle.load(ret_sio)
-
-        return ret_net
-
-
-    def getAllGenStatAverageRunIds(self, run_ids, group="food",
-        stat="max", max_gen=199):
-        """ Provided a tuple of run_ids, returns the average across
-        all geenrations for the requested stat in the given group.
-
-        Returns:
-            list. Sorted by generation with average at each generation.
-        """
-
-        # TODO: Make this actually work.
-        return
-
-        conn = psycopg2.connect(self.__dsn)
-        curs = conn.cursor()
-
-        if group != "food" and group != "moves":
-            print "ERROR: Invalid type ({0}) of group requested!".format(group)
-            return
-
-        if (stat != "max" and stat != "min" and stat != "avg" and
-            stat != "left" and stat != "right" and stat != "forward" and
-            stat !="none"):
-            print "ERROR: Invalid type ({0}) of stat requested!".format(stat)
-            return
-
-
-        sel_str = "{0}_{1}".format(group, stat)
-
-        #TODO: Finish this query
-        test_query = """SELECT food_max
-        FROM generations
-        WHERE ID IN (SELECT AVG(food_max::numeric)
-            FROM generations
-            WHERE run_id IN %s AND
-            generation in )
-        """
-
-        query_str = """SELECT AVG({0}::numeric)
-            FROM generations
-            WHERE
-                generation=%s AND
-                run_id IN %s;""".format(sel_str)
-
-        with self.__getCursor() as curs:
-            curs.execute(query_str, (generation, run_ids) )
-
-            ret_val = curs.fetchall()[0][0]
-
-        return ret_val
-
-
-    def getStatAverageRunIds(self, run_ids, generation=199,
-        group="food", stat="max"):
-        """ Provided a tuple of run_ids, returns the average requested
-        stat in the given group.
-
-        Returns:
-            Decimal: With average of requested query.
-
-        """
-
-        if group != "food" and group != "moves":
-            print "ERROR: Invalid type ({0}) of group requested!".format(group)
-            return
-
-        if (stat != "max" and stat != "min" and
-            stat != "avg" and stat != "stddev_pop"):
-            print "ERROR: Invalid type ({0}) of stat requested!".format(stat)
-            return
-
-        sel_str = "{0}_max".format(group)
-
-        if stat == "max":
-            query_str = """SELECT MAX({0}::numeric)
-                FROM generations
-                WHERE
-                    generation=%s AND
-                    run_id IN %s;""".format(sel_str)
-        elif stat == "min":
-            query_str = """SELECT MIN({0}::numeric)
-                FROM generations
-                WHERE
-                    generation=%s AND
-                    run_id IN %s;""".format(sel_str)
-        elif stat == "avg":
-            query_str = """SELECT AVG({0}::numeric)
-                FROM generations
-                WHERE
-                    generation=%s AND
-                    run_id IN %s;""".format(sel_str)
-        elif stat == "stddev_pop":
-            query_str = """SELECT STDDEV_POP({0}::numeric)
-                FROM generations
-                WHERE
-                    generation=%s AND
-                    run_id IN %s;""".format(sel_str)
-
-        with self.__getCursor() as curs:
-            curs.execute(query_str, (generation, run_ids) )
-
-            ret_val = curs.fetchall()[0][0]
-
-        return ret_val
-
-
-    def getStatAverageLikeRunId(self, run_id, generation=199,
-        group="food", stat="max"):
-        """ Given a run_id, returns the average of the requested stat
-        in the requested group. This function merely does the lookup of the
-        getSameRunIDs as a convinence and calls getStatAverageRunIds.
-
-        """
-
-        run_ids = tuple(self.getSameRunIDs(run_id))
-
-        return self.getStatAverageRunIds(run_ids, generation, group, stat)
-
-
-    def getFirstRunId(self, net, gen, pop, trail=3, max_moves=325,
-        mutate_id=1, elite_count=3, p_mutate=0.2,
-        p_crossover=0.5, weight_min=-5.0, weight_max=5.0):
-        conn = psycopg2.connect(self.__dsn)
-        curs = conn.cursor()
-
-        with self.__getCursor() as curs:
-            curs.execute("""SELECT run.id
-                FROM run
-                INNER JOIN run_config
-                ON run.run_config_id = run_config.id
-                WHERE
-                run_config.networks_id = %s AND
-                run_config.trails_id = %s AND
-                run_config.mutate_id = %s AND
-                run_config.generations = %s AND
-                run_config.population = %s AND
-                run_config.moves_limit = %s AND
-                run_config.elite_count = %s AND
-                round(run_config.p_mutate::numeric, 4) = %s AND
-                round(run_config.p_crossover::numeric, 4) = %s AND
-                run_config.weight_min = %s AND
-                run_config.weight_max = %s
-                LIMIT 1;""", (
-                    net,
-                    trail,
-                    mutate_id,
-                    gen,
-                    pop,
-                    max_moves,
-                    elite_count,
-                    p_mutate,
-                    p_crossover,
-                    weight_min,
-                    weight_max
-                ))
-
-            try:
-                ret_val = curs.fetchall()[0][0]
-            except IndexError:
-                # Means we found nothing matching.
-                # Clean up and print some debug information.
-                curs.close()
-                conn.close()
-
-                print "ERROR: Failed to find a match on query!"
-                print "net         = {0}".format(net)
-                print "trail       = {0}".format(trail)
-                print "mutate_id   = {0}".format(mutate_id)
-                print "generations = {0}".format(gen)
-                print "pop         = {0}".format(pop)
-                print "max_moves   = {0}".format(max_moves)
-                print "elite_count = {0}".format(elite_count)
-                print "p_mutate    = {0}".format(p_mutate)
-                print "p_crossover = {0}".format(p_crossover)
-                print "weight_min  = {0}".format(weight_min)
-                print "weight_max  = {0}".format(weight_max)
-
-                raise
-
-
-        curs.close()
-        conn.close()
-
-        return ret_val
-
 
     @staticmethod
     def __build_where_filters(filters=None, table="run_config"):
@@ -806,36 +520,5 @@ class DBUtils:
                 temp_dict["moves"]     = record[4]
 
                 ret_val.append(temp_dict)
-
-        return ret_val
-
-    def getRunBest(self, run_ids):
-        """ Takes a set of run_ids and returns a dictionary with the
-        best food and best moves in a dictionary with run_id as key.
-
-        Returns:
-            dict. A dictionary with run_id as keys containing a dictionary
-                with keys "food" and "moves" for best (max, min),
-                respectively.
-
-        """
-        with self.__getCursor() as curs:
-            curs.execute("""SELECT
-                run_id,
-                MAX(generations.food_max),
-                MIN(moves_min)
-                FROM generations
-                WHERE run_id IN %s
-                GROUP BY run_id;""",
-                tuple(run_ids))
-
-            ret_val = {}
-
-            for record in curs:
-                temp_dict  = {}
-                temp_dict["food"]  = record[1]
-                temp_dict["moves"] = record[2]
-
-                ret_val[record[0]] = temp_dict
 
         return ret_val
