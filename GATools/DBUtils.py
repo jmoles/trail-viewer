@@ -22,6 +22,7 @@ class VALID_COLUMNS:
         "networks_id",
         "trails_id",
         "mutate_id",
+        "selection_id",
         "generations",
         "population",
         "moves_limit",
@@ -37,6 +38,7 @@ class DBUtils:
         "networks_id",
         "trails_id",
         "mutate_id",
+        "selection_id",
         "generations",
         "population",
         "moves_limit",
@@ -50,10 +52,11 @@ class DBUtils:
         "Networks",
         "Trails",
         "Mutate ID",
+        "Selection",
         "Generations",
         "Population",
         "Moves Limit",
-        "Elite Count",
+        "Tournament Size",
         "P(mutate)",
         "P(Crossover)",
         "Min. Weight",
@@ -275,8 +278,8 @@ class DBUtils:
         where_str = DBUtils.__build_where_filters(filters)
 
         # Build the base query string with the sort column plugged in.
-        data_query_str = """SELECT id, trails_id, networks_id, generations,
-            population, moves_limit, sel_tourn_size, mutate_id,
+        data_query_str = """SELECT id, trails_id, networks_id, selection_id,
+            generations, population, moves_limit, sel_tourn_size, mutate_id,
             p_mutate, p_crossover, weight_min, weight_max
             FROM   run_config
             {0};""".format(where_str)
@@ -307,7 +310,7 @@ class DBUtils:
         where_str = DBUtils.__build_where_filters(filters)
 
         query_str = """SELECT
-        networks_id, trails_id, mutate_id, generations, population,
+        networks_id, trails_id, mutate_id, selection_id, generations, population,
         moves_limit, sel_tourn_size, p_mutate, p_crossover, weight_min,
         weight_max
         FROM run_config

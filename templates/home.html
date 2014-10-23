@@ -19,20 +19,24 @@ Home
 <div class="row">
     <dl class="dl-horizontal">
         {% for values_d in filter_list %}
-            <dt>{{ values_d["string"] }}</dt>
-                <dd><ul class="filter_listing">
-                {% for curr_val_d in values_d["values"] %}
-                    <li>
-                        {% if curr_val_d["url"] != None %}
-                            <a href="{{ curr_val_d["url"] }}">
+            {% if values_d["values"]|length > 1 %}
+                <dt>{{ values_d["string"] }}</dt>
+                    <dd><ul class="filter_listing">
+                    {% for curr_val_d in values_d["values"] %}
+                        {% if curr_val_d["value"] != None %}
+                            <li>
+                                {% if curr_val_d["url"] != None %}
+                                    <a href="{{ curr_val_d["url"] }}">
+                                {% endif %}
+                                {{ curr_val_d["value"] }}
+                                {% if curr_val_d["url"] != None %}
+                                    </a>
+                                {% endif %}
+                            </li>
                         {% endif %}
-                        {{ curr_val_d["value"] }}
-                        {% if curr_val_d["url"] != None %}
-                            </a>
-                        {% endif %}
-                    </li>
-                {% endfor %}
+                    {% endfor %}
                 </ul></dd>
+            {% endif %}
         {% endfor %}
     </dl>
 </div>
@@ -61,9 +65,10 @@ Home
                 <th>Trail</th>
                 <th>Network</th>
                 <th>Gen</th>
+                <th>Sel</th>
                 <th>Pop</th>
                 <th>Move Lim.</th>
-                <th>Elite</th>
+                <th>Tourn. Size</th>
                 <th>Mutate Type</th>
                 <th>P(mut)</th>
                 <th>P(cross)</th>
@@ -77,10 +82,11 @@ Home
             <tr>
                 <th>Trail</th>
                 <th>Network</th>
+                <th>Sel</th>
                 <th>Gen</th>
                 <th>Pop</th>
                 <th>Move Lim.</th>
-                <th>Elite</th>
+                <th>Tourn. Size</th>
                 <th>Mutate Type</th>
                 <th>P(mut)</th>
                 <th>P(cross)</th>
@@ -90,7 +96,7 @@ Home
                 <th>Run IDs</th>
             </tr>
             <tr>
-                <th colspan="13" class="ts-pager" data-column"0">
+                <th colspan="14" class="ts-pager" data-column"0">
                     <button type="button" class="btn first">
                         <span class="glyphicon glyphicon-step-backward"></span>
                     </button>
@@ -117,23 +123,14 @@ Home
             </tr>
         </tfoot>
         <tbody>
-        {% for curr_line in table_data %}
+        {% for row in table_data %}
         <tr>
-
-                <td>{{ curr_line[1]  }}</td>
-                <td>{{ curr_line[2]  }}</td>
-                <td>{{ curr_line[3]  }}</td>
-                <td>{{ curr_line[4]  }}</td>
-                <td>{{ curr_line[5]  }}</td>
-                <td>{{ curr_line[6]  }}</td>
-                <td>{{ curr_line[7]  }}</td>
-                <td>{{ curr_line[8]  }}</td>
-                <td>{{ curr_line[9]  }}</td>
-                <td>{{ curr_line[10]  }}</td>
-                <td>{{ curr_line[11]  }}</td>
-                <td>{{ curr_line[12]|length  }}</td>
+            {% for curr_line in row[1:13] %}
+                <td>{{ curr_line  }}</td>
+            {% endfor %}
+                <td>{{ row[13]|length  }}</td>
                 <td>
-                {% for curr_run_id in curr_line[12] %}
+                {% for curr_run_id in row[13] %}
                     <a href="{{ url_for('plot_by_run_id', run_id=curr_run_id) }}">{{ curr_run_id }}</a>&nbsp;
                 {% endfor %}
                 </td>
