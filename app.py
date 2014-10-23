@@ -242,7 +242,7 @@ def config_by_id(config_id):
     config_info =  pgdb.fetchConfigInfo(config_id)
 
     # Determine the sweep URL, if this config_id is a network in the group.
-    if (config_info["network_id"] in
+    if (config_info["networks_id"] in
         [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
         sweep_url_t = (
             ("network",
@@ -343,6 +343,60 @@ INSERT INTO trails (id, name, moves, init_rot, trail_data) VALUES
 
     return Response(body, content_type="text/plain;charset=UTF-8")
 
+@app.route('/selection', defaults={'select_id' : -1})
+@app.route('/selection/<int:select_id>')
+def select_by_id(select_id):
+    start = datetime.datetime.now()
+
+    # TODO: Finish this function.
+    return render_template('404.html'), 404
+
+    table_data = pgdb.getNetworks()
+
+    if network_id < 0:
+        # List a table of all the networks.
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        return render_template(
+            "network_table.html",
+            table_data=table_data,
+            time_sec=finish_time_s)
+    elif network_id in table_data and ((
+        from_run_id >= 0 and from_run_id in run_information) or
+        from_run_id <= 0):
+        # Show the information on just this network.
+
+        finish_time_s = str((datetime.datetime.now() - start).total_seconds())
+
+        if from_run_id >= 0:
+            run_information = run_information[from_run_id]
+        else:
+            run_information = None
+
+        return render_template(
+            "network_single.html",
+            network_id=network_id,
+            network_name=table_data[network_id],
+            run_info=run_information,
+            from_run_id=from_run_id,
+            time_sec=finish_time_s)
+    elif network_id not in table_data:
+        title="Invalid Select Option"
+        error = """
+        The selection id {0} that you have requested is not valid!""".format(
+            network_id,
+            url_for('select_by_id'))
+        fix = """
+        Want to try browsing the <a href="{0}">list</a> of valid selections?
+        """.format(url_for('select_by_id'))
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+
+    if not app.debug:
+        return bad_request("An unknown error has occurred!")
+
 
 @app.route('/network', defaults={'network_id' : -1})
 @app.route('/network/<int:network_id>')
@@ -408,8 +462,10 @@ def network_by_id(network_id):
 def plot_by_run_id(run_id):
     start = datetime.datetime.now()
 
-    # Grab the run information
-    run_information =  pgdb.fetchRunInfo(run_id)[run_id]
+    # Grab the run information.
+    # TODO: Could really clean this up with a view here.
+    run_information = pgdb.fetchRunInfo(run_id)[run_id]
+    config_info = pgdb.fetchConfigInfo(run_information["run_config_id"])
 
     the_urls = chart.plotly_single_run_set(run_id, run_information)
 
@@ -435,9 +491,10 @@ def plot_by_run_id(run_id):
         int(round(runtime_sec % 3600 // 60)),
         int(round(runtime_sec % 60)))
 
-    trail_name   = pgdb.getTrails()[run_information["trails_id"]]["name"]
-    network_name = pgdb.getNetworks()[run_information["networks_id"]]
-    mutate_name  = pgdb.getMutates()[run_information["mutate_id"]]
+    trail_name   = config_info["trail_name"]
+    network_name = config_info["network_name"]
+    mutate_name  = config_info["mutate_name"]
+    select_name  = config_info["select_name"]
 
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
@@ -445,11 +502,9 @@ def plot_by_run_id(run_id):
         "plot_results.html",
         run_id=run_id,
         run_info=run_information,
+        config_info=config_info,
         images_l=images_l,
-        time_sec=finish_time_s,
-        trail_name=trail_name,
-        network_name=network_name,
-        mutate_name=mutate_name)
+        time_sec=finish_time_s)
 
 @app.route("/plot/line/config_id/<int:config_id>/<ext>/<stat_group>")
 def img_by_conf_id(config_id, ext="png", stat_group ="food"):

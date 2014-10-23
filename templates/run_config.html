@@ -42,8 +42,12 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
         <dl class="dl-horizontal">
             <dt>Moves Limit</dt>
                 <dd>{{ run_config["moves_limit"] }}</dd>
-            <dt>Elite/Hall of Fame</dt>
-                <dd>{{ run_config["elite_count"] }}</dd>
+            <dt>Selection Method</dt>
+                <dd><a href="{{ url_for('select_by_id', select_id=run_config["selection_id"]) }}">{{ run_config["select_name"] }}</a></dd>
+            {% if run_config["selection_id"] == 1 %}
+                <dt>Tournament Size</dt>
+                    <dd>{{ run_config["sel_tourn_size"] }}</dd>
+            {% endif %}
             <dt>P(Mutate)</dt>
                 <dd>{{ run_config["p_mutate"] }}</dd>
             <dt>P(Crossover)</dt>

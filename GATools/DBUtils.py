@@ -25,7 +25,7 @@ class VALID_COLUMNS:
         "generations",
         "population",
         "moves_limit",
-        "elite_count",
+        "sel_tourn_size",
         "p_mutate",
         "p_crossover",
         "weight_min",
@@ -40,7 +40,7 @@ class DBUtils:
         "generations",
         "population",
         "moves_limit",
-        "elite_count",
+        "sel_tourn_size",
         "p_mutate",
         "p_crossover",
         "weight_min",
@@ -106,6 +106,9 @@ class DBUtils:
 
     def getMutates(self):
         return self.__genericDictGet("SELECT id, name FROM mutate")
+
+    def getSelect(self):
+        return self.__genericDictGet("SELECT id, name FROM selection")
 
     def __genericDictGet(self, query):
         ret_dict = {}
@@ -193,8 +196,8 @@ class DBUtils:
         with self.__getCursor() as curs:
             curs.execute("""SELECT run.id, trails_id, networks_id, mutate_id,
                 host_configs_id, run_date, runtime, hostname, generations,
-                population, moves_limit, elite_count, p_mutate, p_crossover,
-                weight_min, weight_max, debug, run_config.id
+                population, moves_limit, sel_tourn_size, p_mutate, p_crossover,
+                weight_min, weight_max, debug, run_config.id, selection_id
                 FROM run
                 INNER JOIN run_config
                 ON run.run_config_id = run_config.id
@@ -216,13 +219,14 @@ class DBUtils:
                 curr_dict["generations"]     = record[8]
                 curr_dict["population"]      = record[9]
                 curr_dict["moves_limit"]     = record[10]
-                curr_dict["elite_count"]     = record[11]
+                curr_dict["sel_tourn_size"]  = record[11]
                 curr_dict["p_mutate"]        = record[12]
                 curr_dict["p_crossover"]     = record[13]
                 curr_dict["weight_min"]      = record[14]
                 curr_dict["weight_max"]      = record[15]
                 curr_dict["debug"]           = record[16]
                 curr_dict["run_config_id"]   = record[17]
+                curr_dict["selection_id"]    = record[18]
 
                 ret_val[this_run_id]       = curr_dict
 
@@ -272,7 +276,7 @@ class DBUtils:
 
         # Build the base query string with the sort column plugged in.
         data_query_str = """SELECT id, trails_id, networks_id, generations,
-            population, moves_limit, elite_count, mutate_id,
+            population, moves_limit, sel_tourn_size, mutate_id,
             p_mutate, p_crossover, weight_min, weight_max
             FROM   run_config
             {0};""".format(where_str)
@@ -304,7 +308,7 @@ class DBUtils:
 
         query_str = """SELECT
         networks_id, trails_id, mutate_id, generations, population,
-        moves_limit, elite_count, p_mutate, p_crossover, weight_min,
+        moves_limit, sel_tourn_size, p_mutate, p_crossover, weight_min,
         weight_max
         FROM run_config
         {0};""".format(where_str)
@@ -350,56 +354,34 @@ class DBUtils:
         """
 
         with self.__getCursor() as curs:
-            curs.execute("""SELECT
-                run_config.trails_id,
-                run_config.networks_id,
-                run_config.mutate_id,
-                run_config.generations,
-                run_config.population,
-                run_config.moves_limit,
-                run_config.elite_count,
-                run_config.p_mutate,
-                run_config.p_crossover,
-                run_config.weight_min,
-                run_config.weight_max,
-                networks.id,
-                networks.name,
-                networks.dl_length,
-                trails.id,
-                trails.name,
-                trails.moves,
-                trails.init_rot,
-                trails.trail_data
-                FROM run_config
-                INNER JOIN networks
-                ON run_config.networks_id = networks.id
-                INNER JOIN trails
-                ON run_config.trails_id = trails.id
-                WHERE run_config.id = %s;""", (config_id, ) )
+            curs.execute("""SELECT *
+                FROM run_config_full
+                WHERE id = %s;""", (config_id, ) )
 
             result = curs.fetchall()[0]
 
             curr_dict                    = {}
 
-            curr_dict["trails_id"]       = result[0]
-            curr_dict["networks_id"]     = result[1]
-            curr_dict["mutate_id"]       = result[2]
-            curr_dict["generations"]     = result[3]
-            curr_dict["population"]      = result[4]
-            curr_dict["moves_limit"]     = result[5]
-            curr_dict["elite_count"]     = result[6]
-            curr_dict["p_mutate"]        = result[7]
-            curr_dict["p_crossover"]     = result[8]
-            curr_dict["weight_min"]      = result[9]
-            curr_dict["weight_max"]      = result[10]
-            curr_dict["network_id"]      = result[11]
-            curr_dict["network_name"]    = result[12]
-            curr_dict["network_dl_len"]  = result[13]
-            curr_dict["trail_id"]        = result[14]
+            curr_dict["trails_id"]       = result[1]
+            curr_dict["networks_id"]     = result[2]
+            curr_dict["mutate_id"]       = result[3]
+            curr_dict["selection_id"]    = result[4]
+            curr_dict["generations"]     = result[5]
+            curr_dict["population"]      = result[6]
+            curr_dict["moves_limit"]     = result[7]
+            curr_dict["sel_tourn_size"]  = result[8]
+            curr_dict["p_mutate"]        = result[9]
+            curr_dict["p_crossover"]     = result[10]
+            curr_dict["weight_min"]      = result[11]
+            curr_dict["weight_max"]      = result[12]
+            curr_dict["network_name"]    = result[13]
+            curr_dict["network_dl_len"]  = result[14]
             curr_dict["trail_name"]      = result[15]
             curr_dict["trail_moves"]     = result[16]
             curr_dict["trail_init_rot"]  = result[17]
             curr_dict["trail_data"]      = np.matrix(result[18])
+            curr_dict["select_name"]     = result[19]
+            curr_dict["mutate_name"]     = result[20]
 
             curr_dict["max_food"] = np.bincount(np.squeeze(np.asarray(
                 curr_dict["trail_data"].flatten())))[1]
@@ -444,7 +426,7 @@ class DBUtils:
                         run_config WHERE id = %s) AND
             	    moves_limit =  (SELECT moves_limit FROM
                         run_config WHERE id = %s) AND
-            	    elite_count =  (SELECT elite_count FROM
+                    sel_tourn_size =  (SELECT sel_tourn_size FROM
                         run_config WHERE id = %s) AND
             	    p_mutate =  (SELECT p_mutate FROM
                         run_config WHERE id = %s) AND

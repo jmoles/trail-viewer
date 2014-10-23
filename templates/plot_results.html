@@ -36,11 +36,11 @@ Simulation Run {{ run_id }}
     <div class="col-md-4">
         <dl class="dl-horizontal">
             <dt>Network Name</dt>
-                <dd><a href="{{ url_for('network_by_id', network_id=run_info['networks_id'], from_run_id=run_id) }}">{{ network_name }}</a></dd>
+                <dd><a href="{{ url_for('network_by_id', network_id=run_info['networks_id'], from_run_id=run_id) }}">{{ config_info["network_name"] }}</a></dd>
             <dt>Trail Name</dt>
-                <dd><a href="{{ url_for('trail_by_id', trail_id=run_info['trails_id']) }}">{{ trail_name }}</a></dd>
+                <dd><a href="{{ url_for('trail_by_id', trail_id=run_info['trails_id']) }}">{{ config_info["trail_name"] }}</a></dd>
             <dt>Mutate Type</dt>
-                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/tools.html#deap.tools.{{ mutate_name }}" target="_blank">{{ mutate_name }}</a></dd>
+                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/tools.html#deap.tools.{{ mutate_name }}" target="_blank">{{ config_info["mutate_name"] }}</a></dd>
             <dt>Generations</dt>
                 <dd>{{ run_info["generations"] }}</dd>
             <dt>Population</dt>
@@ -51,8 +51,12 @@ Simulation Run {{ run_id }}
         <dl class="dl-horizontal">
             <dt>Moves Limit</dt>
                 <dd>{{ run_info["moves_limit"] }}</dd>
-            <dt>Elite/Hall of Fame</dt>
-                <dd>{{ run_info["elite_count"] }}</dd>
+            <dt>Selection Method</dt>
+                <dd><a href="{{ url_for('select_by_id', select_id=config_info["selection_id"]) }}">{{ config_info["select_name"] }}</a></dd>
+            {% if run_info["selection_id"] == 1 %}
+                <dt>Tournament Size</dt>
+                    <dd>{{ config_info["sel_tourn_size"] }}</dd>
+            {% endif %}
             <dt>P(Mutate)</dt>
                 <dd>{{ run_info["p_mutate"] }}</dd>
             <dt>P(Crossover)</dt>
