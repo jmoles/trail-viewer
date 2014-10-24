@@ -655,6 +655,9 @@ def sweep_chart(config_id):
         },
     ]
 
+    # Build the list of URLs to other sweep charts.
+    sweel_url_l = build_sweeps_list(config_id, sweep)
+
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
 
@@ -664,7 +667,8 @@ def sweep_chart(config_id):
         time_sec = finish_time_s,
         sweep_title = sweep_title,
         config_id = config_id,
-        config_info = config_info
+        config_info = config_info,
+        sweep_url_l = sweel_url_l
         )
 
 

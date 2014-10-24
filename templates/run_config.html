@@ -25,16 +25,9 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
 <h2>Configuration</h2>
 {{ cvmacros.run_configuration(run_config) }}
 
-{% if sweep_url_t != None %}
 <h2>Sweeps</h2>
-<div class="row">
-    <div class="col-md-12">
-        {% for curr_sweep in sweep_url_l %}
-            <button type="button" class="btn btn-default"><a href="{{ curr_sweep[1] }}">{{ curr_sweep[0]|title }}</a></button>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
+{{ cvmacros.sweep_urls_block(sweep_url_l) }}
+
 
 <h2>Charts</h2>
 <p>Charts are showing the mean across all runs on a per generation basis (every value of X) for the maximum, minimum, and average.</p>

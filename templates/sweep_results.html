@@ -30,6 +30,8 @@ Sweep by {{sweep_title|title}} on Configuration <a href="{{url_for('config_by_id
     </div>
     {% endfor %}
 </div>
+<h2>Other Sweeps</h2>
+{{ cvmacros.sweep_urls_block(sweep_url_l) }}
 
 
 {% endblock %}
