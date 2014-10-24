@@ -253,7 +253,7 @@ class chart:
             # Generate the URL.
             plot_urls[chart_type] = chart.__generate_plotly_url(fig,
                 filename="sweep_{0}_{1}".format(''.join(e for e in x_label if e.isalnum()), config_id),
-                fileopt="new")
+                fileopt="overwrite")
 
         return plot_urls
 
