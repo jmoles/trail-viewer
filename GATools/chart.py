@@ -6,7 +6,9 @@ import matplotlib.pyplot as pyplot
 import matplotlib.backends.backend_agg as pltagg
 import numpy as np
 import plotly.plotly as py
-from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line, Bar
+from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, ZAxis
+from plotly.graph_objs import Figure, Line, Bar, Scatter3d, Scene, Surface
+from plotly.graph_objs import Heatmap
 import time
 
 from DBUtils import DBUtils
@@ -163,6 +165,7 @@ class chart:
         Returns ready to embed URLs.
         """
         plot_urls = {}
+        is_3d = False # Determines if plot is 3d
 
         # Determine how to label the axes.
         if sweep_type == "selection":
@@ -203,29 +206,64 @@ class chart:
                 config_info["moves_limit"])
             chart_set_config["moves-taken"]["max-title"] = "Limit"
 
+        if sweep_type == "p_mutate_crossover":
+            chart_set_config["food"]["xaxis"] = "P(mutate)"
+            chart_set_config["food"]["yaxis"] = "P(crossover)"
+            chart_set_config["food"]["zaxis"] = "Food Consumed"
+            chart_set_config["food"]["type"] = Heatmap
+            chart_set_config["food"]["val-func"] = [max]
+
+            chart_set_config["moves-taken"]["xaxis"] = "P(mutate)"
+            chart_set_config["moves-taken"]["yaxis"] = "P(crossover)"
+            chart_set_config["moves-taken"]["zaxis"] = "Moves Taken"
+            chart_set_config["moves-taken"]["type"] = Heatmap
+            chart_set_config["moves-taken"]["val-func"] = [min]
+            is_3d = True
+
         # TODO: Could multithread here to speed things up.
         for chart_type, settings in chart_set_config.items():
             traces_list = []
 
             for idx, this_func in enumerate(settings["val-func"]):
+                x_vals = []
                 y_vals = []
+                z_vals = []
 
-                for curr_x in sorted(db_data.keys()):
-                    y_vals.append(this_func(
-                        [x[settings["db-idx"]] for x in db_data[curr_x]]))
+                if is_3d:
+                    y_vals = sorted(db_data.keys())
+                    for cy in y_vals:
+                        this_y = sorted(db_data[cy].keys())
+                        x_vals.extend(this_y)
 
-                this_trace = settings["type"](
-                    x=x_label_vals,
-                    y=y_vals,
-                    mode=settings["plot-mode"],
-                    name=settings["label"][idx].title()
-                )
+                        this_z = []
+                        for cx in this_y:
+                            this_z.append(this_func(
+                                [x[settings["db-idx"]] for x in db_data[cy][cx]]))
+                        z_vals.append(this_z)
+
+                    this_trace = settings["type"](
+                        x=sorted(set(x_vals)),
+                        y=y_vals,
+                        z=z_vals,
+                        name=settings["label"][idx].title()
+                    )
+                else:
+                    for curr_x in sorted(db_data.keys()):
+                        y_vals.append(this_func(
+                            [x[settings["db-idx"]] for x in db_data[curr_x]]))
+
+                    this_trace = settings["type"](
+                        x=x_label_vals,
+                        y=y_vals,
+                        mode=settings["plot-mode"],
+                        name=settings["label"][idx].title()
+                    )
 
 
                 traces_list.append(this_trace)
 
             # If desired, add the maximum line.
-            if "max-line" in settings:
+            if "max-line" in settings and not is_3d:
 
                 y_val = np.empty(len(x_label_vals))
                 y_val.fill(settings["max-line"])
@@ -252,7 +290,10 @@ class chart:
 
             # Generate the URL.
             plot_urls[chart_type] = chart.__generate_plotly_url(fig,
-                filename="sweep_{0}_{1}".format(''.join(e for e in x_label if e.isalnum()), config_id),
+                filename="sweep_{0}_{1}_{2}".format(
+                    ''.join(e for e in x_label if e.isalnum()),
+                    config_id,
+                    chart_type),
                 fileopt="overwrite")
 
         return plot_urls

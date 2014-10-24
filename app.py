@@ -30,10 +30,10 @@ NETWORK_SWEEP_GROUPS = [
 ]
 
 VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
-    "moves_limit", "population", "generation"]
+    "moves_limit", "population", "generation", "p_mutate_crossover"]
 
 SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
-    "Moves Limit", "Population", "Generations"]
+    "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)"]
 
 app = Flask(__name__)
 
@@ -626,10 +626,15 @@ def sweep_chart(config_id):
         sweep_title = "P(crossover)"
     elif sweep == "moves_limit":
         sweep_title = "Moves Limit"
+    elif sweep == "p_mutate_crossover":
+        sweep_title = "P(mutate) and P(crossover)"
 
 
     if sweep == "network":
         x_label = "Delay Line Length"
+    elif sweep == "p_mutate_crossover":
+        x_label = "P(mutate)"
+        y_label = "P(crossover)"
     else:
         x_label = sweep_title
 

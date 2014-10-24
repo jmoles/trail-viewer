@@ -412,14 +412,8 @@ class DBUtils:
         return curr_dict
 
     def fetch_run_config_sweep(self, config_id, sweep_type="network", id_filters=None):
-        # Create the tuple of values to place in cursor.
-        if sweep_type == "network":
-            curs_tupe = curs_tuple = (
-                (config_id, ) * 14 +
-                (tuple(id_filters), ) +
-                (config_id, ))
-        else:
-            curs_tuple = ((config_id, ) * 15)
+        # Means query string returns two values (x, y) rather than just one (x)
+        is_3d = False
 
         # Determine the query string to use.
         if sweep_type == "network":
@@ -436,9 +430,21 @@ class DBUtils:
             query_s = dbs.POPULATION_SWEEP
         elif sweep_type == "generation":
             query_s = dbs.GENERATION_SWEEP
+        elif sweep_type == "p_mutate_crossover":
+            query_s = dbs.P_MUTATE_CROSSOVER_SWEEP
+            is_3d = True
         else:
             # Invalid sweep specified.
             return
+
+        # Create the tuple of values to place in cursor.
+        if sweep_type == "network":
+            curs_tupe = curs_tuple = (
+                (config_id, ) * 14 +
+                (tuple(id_filters), ) +
+                (config_id, ))
+        else:
+            curs_tuple = ((config_id, ) * (15 - is_3d))
 
 
         with self.__getCursor() as curs:
@@ -448,20 +454,32 @@ class DBUtils:
 
             for record in curs:
 
-                sweep_idx = record[0]
-                food_max = record[1]
-                moves_min = record[2]
-                run_id = record[3]
+                # Offset the records by 1 if it is 3D fetch.
+                sweep_idx_outer = record[0]
+                sweep_idx_inner = record[0 + is_3d]
+                food_max = record[1 + is_3d]
+                moves_min = record[2 + is_3d]
+                run_id = record[3 + is_3d]
 
-                if len(record) > 4:
-                    temp_tuple = (food_max, moves_min, run_id, record[4])
+                if  len(record) > (4 + is_3d):
+                    temp_tuple = (food_max, moves_min, run_id, record[4 + is_3d])
                 else:
                     temp_tuple = (food_max, moves_min, run_id)
 
-                if not ret_val.has_key(sweep_idx):
-                    ret_val[sweep_idx] = []
+                if is_3d:
+                    if not ret_val.has_key(sweep_idx_outer):
+                        ret_val[sweep_idx_outer] = {}
 
-                ret_val[sweep_idx].append(temp_tuple)
+                    if not ret_val[sweep_idx_outer].has_key(sweep_idx_inner):
+                        ret_val[sweep_idx_outer][sweep_idx_inner] = []
+
+                    ret_val[sweep_idx_outer][sweep_idx_inner].append(temp_tuple)
+
+                else:
+                    if not ret_val.has_key(sweep_idx_outer):
+                        ret_val[sweep_idx_outer] = []
+
+                    ret_val[sweep_idx_outer].append(temp_tuple)
 
             return ret_val
 
