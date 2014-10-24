@@ -23,55 +23,14 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
 
 {% block content %}
 <h2>Configuration</h2>
-<div class="row">
-    <div class="col-md-6">
-        <dl class="dl-horizontal">
-            <dt>Network Name</dt>
-                <dd><a href="{{ url_for('network_by_id', network_id=run_config['networks_id']) }}">{{ network_name }}</a></dd>
-            <dt>Trail Name</dt>
-                <dd><a href="{{ url_for('trail_by_id', trail_id=run_config['trails_id']) }}">{{ trail_name }}</a></dd>
-            <dt>Mutate Type</dt>
-                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/tools.html#deap.tools.{{ mutate_name }}" target="_blank">{{ mutate_name }}</a></dd>
-            <dt>Generations</dt>
-                <dd>{{ run_config["generations"] }}</dd>
-            <dt>Population</dt>
-                <dd>{{ run_config["population"] }}</dd>
-            <dt>Variations Type</dt>
-                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/algo.html#deap.algorithms.{{ run_config["variations_name"]}}">{{ run_config["variations_name"]}}</a></dd>
-            <dt>Algorithm Version</dt>
-                <dd>{{ run_config["algorithm_ver"]}}</dd>
-        </dl>
-    </div>
-    <div class="col-md-6">
-        <dl class="dl-horizontal">
-            <dt>Moves Limit</dt>
-                <dd>{{ run_config["moves_limit"] }}</dd>
-            <dt>Selection Method</dt>
-                <dd><a href="{{ url_for('select_by_id', select_id=run_config["selection_id"]) }}">{{ run_config["select_name"] }}</a></dd>
-            {% if run_config["selection_id"] == 1 %}
-                <dt>Tournament Size</dt>
-                    <dd>{{ run_config["sel_tourn_size"] }}</dd>
-            {% endif %}
-            {% if run_config["lambda"] is not none %}
-                <dt>&lambda;</dt>
-                    <dd>{{ run_config["lambda"] }}</dd>
-            {% endif %}
-            <dt>P(Mutate)</dt>
-                <dd>{{ run_config["p_mutate"] }}</dd>
-            <dt>P(Crossover)</dt>
-                <dd>{{ run_config["p_crossover"] }}</dd>
-            <dt>Weight</dt>
-                <dd>[{{ run_config["weight_min"] }}, {{ run_config["weight_max"] }}]</dd>
-        </dl>
-    </div>
-</div>
+{{ cvmacros.run_configuration(run_config) }}
 
 {% if sweep_url_t != None %}
 <h2>Sweeps</h2>
 <div class="row">
     <div class="col-md-12">
-        {% for name, url in sweep_url_t %}
-            <button type="button" class="btn btn-default"><a href="{{ url }}">{{ name|title }}</a></button>
+        {% for curr_sweep in sweep_url_l %}
+            <button type="button" class="btn btn-default"><a href="{{ curr_sweep[1] }}">{{ curr_sweep[0]|title }}</a></button>
         {% endfor %}
     </div>
 </div>

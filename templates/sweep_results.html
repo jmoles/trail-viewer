@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 {% set active_page = "run_listing" %}
 {% block title %}
-Sweep by Network
+Sweep by {{sweep_title|title}} on Configuration {{ config_id }}
 {% endblock %}
 
 {% block header_text %}
-Sweep by Network
+Sweep by {{sweep_title|title}} on Configuration <a href="{{url_for('config_by_id', config_id=config_id)}}">{{ config_id }}</a>
 {% endblock %}
 
 {% block content %}
+<h2>Run {{ config_id }} Configuration</h2>
+{{ cvmacros.run_configuration(config_info) }}
 <h2>Charts</h2>
 <div class="row">
     {% for idx in range(images_l|count) %}

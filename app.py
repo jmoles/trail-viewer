@@ -29,6 +29,12 @@ NETWORK_SWEEP_GROUPS = [
     [38]
 ]
 
+VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
+    "moves_limit", "population", "generation"]
+
+SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
+    "Moves Limit", "Population", "Generations"]
+
 app = Flask(__name__)
 
 pgdb = DBUtils()
@@ -114,6 +120,24 @@ def render_error(code=400,
             title=title,
             error=error,
             fix=fix), 400
+
+def build_sweeps_list(config_id, exclude=None):
+    ret_val = []
+
+    for idx, curr_sweep in enumerate(VALID_SWEEPS):
+        # Skip if not compatiable with network sweeps.
+        if curr_sweep == "network" and (config_id not in
+            [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
+                continue
+        # Or skip if it is excluded.
+        if curr_sweep == exclude:
+            continue
+
+        ret_val.append(
+            (SWEEP_BUTTON_STR[idx],
+                url_for('sweep_chart', config_id=config_id, sweep=curr_sweep)))
+
+    return ret_val
 
 
 ### End of Helper Functions.
@@ -242,14 +266,7 @@ def config_by_id(config_id):
     config_info =  pgdb.fetchConfigInfo(config_id)
 
     # Determine the sweep URL, if this config_id is a network in the group.
-    if (config_info["networks_id"] in
-        [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
-        sweep_url_t = (
-            ("network",
-                url_for('sweep_chart', config_id=config_id, sweep="network")),
-                )
-    else:
-        sweep_url_t = None
+    sweep_url_l = build_sweeps_list(config_info["networks_id"])
 
     trail_name   = pgdb.getTrails()[config_info["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[config_info["networks_id"]]
@@ -272,7 +289,7 @@ def config_by_id(config_id):
         network_name   = network_name,
         mutate_name    = mutate_name,
         table_data     = table_data,
-        sweep_url_t    = sweep_url_t)
+        sweep_url_l    = sweep_url_l)
 
 @app.route('/trail', defaults={'trail_id' : -1})
 @app.route('/trail/<int:trail_id>')
@@ -570,49 +587,73 @@ def sweep_chart(config_id):
     """ Generates sweep charts for given config ID.
         User can also provide "sweep" that is one of the following:
             * network - Sweeps across network types.
-            * moves_limit - The limit of moves.
+            * p_mutate
     """
     start = datetime.datetime.now()
 
     sweep = request.args.get('sweep', default="network")
 
+    # Check that the sweep is valid.
+    if sweep not in VALID_SWEEPS:
+        return render_error(400,
+            "Invalid Sweep Type Selected",
+            "The sweep type you have selected is invalid.",
+            "Ensure the sweep type is one of <ul><li>{0}</ul>".format("<li>".join(VALID_SWEEPS)))
+
     # Get the configuration of this run.
     config_info =  pgdb.fetchConfigInfo(config_id)
 
+    # The title is the sweep type unless the type of sweep changes it.
+    sweep_title = sweep
+
+    # The id_filters is None unless sweep changes it.
+    id_filters = None
+
+    # The values represented on the x-axis label default to
+    # valus from DB unless overriden in this variable
+    x_vals = None
+
     if sweep == "network":
         # Sweep across the networks
+        x_label = "Delay Line Length"
 
-        # Constant groups used sweep networks.
-        # TODO: Query this from database with RE rather than static.
-
-
+        # TODO: Query NETWORK_SWEEP_GROUPS from database with RE rather than static.
         # Find the network group that this config is part of.
-        group = [x for x in NETWORK_SWEEP_GROUPS if config_info["networks_id"] in x][0]
-
-        # Get the sweep data.
-        sweep_data =  pgdb.fetch_run_config_sweep_by_network(config_id, group)
-
-        the_urls = chart.sweep_charts(
-            sweep_data,
-            config_id,
-            config_info["max_food"])
-
-        # Have the data. Now need to generate a plot.
-        images_l = [
-            {
-                "title": "Food vs. Generations",
-                "url" : the_urls["food"]
-            },
-            {
-                "title": "Moves vs. Generations",
-                "url" : the_urls["moves-taken"]
-            },
-        ]
-
-
+        id_filters = [x for x in NETWORK_SWEEP_GROUPS if config_info["networks_id"] in x][0]
+    elif sweep == "p_mutate":
+        sweep_title = "P(mutate)"
+    elif sweep == "p_crossover":
+        sweep_title = "P(crossover)"
     elif sweep == "moves_limit":
-        # Sweep across the limit of moves that can be made.
-        pass
+        sweep_title = "Moves Limit"
+
+
+    if sweep == "network":
+        x_label = "Delay Line Length"
+    else:
+        x_label = sweep_title
+
+    sweep_data = pgdb.fetch_run_config_sweep(config_id, sweep, id_filters)
+
+    # Now, generate the sweep charts.
+    the_urls = chart.sweep_charts(
+        sweep_data,
+        config_id,
+        config_info,
+        sweep,
+        x_label=x_label)
+
+    # Have the data. Now need to generate a plot.
+    images_l = [
+        {
+            "title": "Food vs. Generations",
+            "url" : the_urls["food"]
+        },
+        {
+            "title": "Moves vs. Generations",
+            "url" : the_urls["moves-taken"]
+        },
+    ]
 
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
@@ -621,6 +662,9 @@ def sweep_chart(config_id):
         "sweep_results.html",
         images_l = images_l,
         time_sec = finish_time_s,
+        sweep_title = sweep_title,
+        config_id = config_id,
+        config_info = config_info
         )
 
 

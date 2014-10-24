@@ -6,7 +6,7 @@ import matplotlib.pyplot as pyplot
 import matplotlib.backends.backend_agg as pltagg
 import numpy as np
 import plotly.plotly as py
-from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line
+from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line, Bar
 import time
 
 from ..DBUtils import DBUtils
@@ -154,7 +154,7 @@ class chart:
         return plot_urls
 
     @staticmethod
-    def sweep_charts(db_data, config_id, max_food):
+    def sweep_charts(db_data, config_id, config_info, sweep_type, x_label):
         """ Given a set of db_data from
         DBUtils.fetch_run_config_sweep_by_network along with the config_id,
         and maximum amount of food, generates a food and moves taken sweep
@@ -164,60 +164,75 @@ class chart:
         """
         plot_urls = {}
 
+        # Determine how to label the axes.
+        if sweep_type == "selection":
+            # Grab the x-axis labels for this plot.
+            x_label_vals = [y[3] for y in [
+                db_data[x][0] for x in db_data]]
+        else:
+            x_label_vals = sorted(db_data.keys())
+
         chart_set_config = {
             "food" : {
                 "title" : "Food vs. Generations Sweep",
                 "db-idx" : 0,
-                "val-func" : max,
+                "val-func" : [max, np.average, np.std],
                 "type" : Scatter,
                 "plot-mode" : "lines",
-                "xaxis" : "Delay Line Length",
+                "xaxis" : x_label.title(),
                 "yaxis" : "Food Consumed",
-                "max-line" : max_food,
+                "max-line" : config_info["max_food"],
                 "max-title" : "Available",
-                "label" : "max"
+                "label" : ["max", "mean", "std"]
             },
             "moves-taken" : {
                 "title" : "Moves Taken vs. Generations Sweep",
                 "db-idx" : 1,
-                "val-func" : min,
+                "val-func" : [min, np.average, np.std],
                 "type" : Scatter,
                 "plot-mode" : "lines",
-                "xaxis" : "Delay Line Length",
+                "xaxis" : x_label.title(),
                 "yaxis" : "Moves Taken",
-                "label" : "min"
+                "label" : ["min", "mean", "std"]
             },
         }
+
+        # Add the max line for moves if not "moves_limit" type.
+        if sweep_type != "moves_limit":
+            chart_set_config["moves-taken"]["max-line"] = (
+                config_info["moves_limit"])
+            chart_set_config["moves-taken"]["max-title"] = "Limit"
 
         # TODO: Could multithread here to speed things up.
         for chart_type, settings in chart_set_config.items():
             traces_list = []
 
-            x_vals = sorted(db_data.keys())
-            y_vals = []
+            for idx, this_func in enumerate(settings["val-func"]):
+                y_vals = []
 
-            for curr_x in x_vals:
-                y_vals.append(settings["val-func"](
-                    [x[settings["db-idx"]] for x in db_data[curr_x]]))
+                for curr_x in sorted(db_data.keys()):
+                    y_vals.append(this_func(
+                        [x[settings["db-idx"]] for x in db_data[curr_x]]))
 
-            this_trace = settings["type"](
-                x=x_vals,
-                y=y_vals,
-                mode=settings["plot-mode"],
-                name=settings["label"].title()
-            )
+                this_trace = settings["type"](
+                    x=x_label_vals,
+                    y=y_vals,
+                    mode=settings["plot-mode"],
+                    name=settings["label"][idx].title()
+                )
 
-            traces_list.append(this_trace)
+
+                traces_list.append(this_trace)
 
             # If desired, add the maximum line.
             if "max-line" in settings:
 
-                y_val = np.empty(len(x_vals))
+                y_val = np.empty(len(x_label_vals))
                 y_val.fill(settings["max-line"])
 
                 traces_list.append(
-                    settings["type"](
-                        x=x_vals,
+                    Scatter(
+                        x=x_label_vals,
                         y=y_val,
                         mode="lines",
                         line={
@@ -237,8 +252,8 @@ class chart:
 
             # Generate the URL.
             plot_urls[chart_type] = chart.__generate_plotly_url(fig,
-                filename="sweep_{0}_{1}".format(chart_type, config_id),
-                fileopt='overwrite')
+                filename="sweep_{0}_{1}".format(''.join(e for e in x_label if e.isalnum()), config_id),
+                fileopt="new")
 
         return plot_urls
 

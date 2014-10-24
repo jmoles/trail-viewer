@@ -5,6 +5,8 @@ import psycopg2
 import psycopg2.pool
 import sys
 
+from DBUtils_strings import DBUtils_strings as dbs
+
 try:
     import cPickle as pickle
 except:
@@ -409,82 +411,57 @@ class DBUtils:
 
         return curr_dict
 
-    def fetch_run_config_sweep_by_network(self, config_id, id_filters):
-        """ Takes a provided config_id and finds other config_ids matching
-        this config_id with just network different. Returns a list of tuples
-        containing the id from run_config table and the networks_id.
-
-        """
-
-        with self.__getCursor() as curs:
-            curs_tuple = (
-                (config_id, ) * 13 +
+    def fetch_run_config_sweep(self, config_id, sweep_type="network", id_filters=None):
+        # Create the tuple of values to place in cursor.
+        if sweep_type == "network":
+            curs_tupe = curs_tuple = (
+                (config_id, ) * 14 +
                 (tuple(id_filters), ) +
                 (config_id, ))
+        else:
+            curs_tuple = ((config_id, ) * 15)
 
-            curs.execute("""SELECT
-            networks.dl_length, generations.food_max,
-            generations.moves_min, run.id
-            FROM run
-            INNER JOIN generations
-            ON run.id = generations.run_id
-            INNER JOIN run_config
-            ON run_config.id = run.run_config_id
-            INNER JOIN networks
-            ON run_config.networks_id = networks.id
-            WHERE run.run_config_id IN (
-            	SELECT id
-            	FROM run_config
-            	WHERE
-            	    trails_id =  (SELECT trails_id FROM
-                        run_config WHERE id = %s) AND
-            	    mutate_id =  (SELECT mutate_id FROM
-                        run_config WHERE id = %s) AND
-            	    generations =  (SELECT generations FROM
-                        run_config WHERE id = %s) AND
-            	    population =  (SELECT population FROM
-                        run_config WHERE id = %s) AND
-            	    moves_limit =  (SELECT moves_limit FROM
-                        run_config WHERE id = %s) AND
-                    sel_tourn_size =  (SELECT sel_tourn_size FROM
-                        run_config WHERE id = %s) AND
-            	    p_mutate =  (SELECT p_mutate FROM
-                        run_config WHERE id = %s) AND
-            	    p_crossover =  (SELECT p_crossover FROM
-                        run_config WHERE id = %s) AND
-            	    weight_min =  (SELECT weight_min FROM
-                        run_config WHERE id = %s) AND
-            	    weight_max =  (SELECT weight_max FROM
-                        run_config WHERE id = %s) AND
-                    lambda =  (SELECT lambda FROM
-                        run_config WHERE id = %s) AND
-                    variations_id =  (SELECT variations_id FROM
-                        run_config WHERE id = %s) AND
-                    algorithm_ver =  (SELECT algorithm_ver FROM
-                        run_config WHERE id = %s) AND
-            	    networks_id IN %s) AND
-            generations.generation = (SELECT generations FROM
-                run_config WHERE id = %s) - 1 AND
-            run.debug IS FALSE
-            ORDER BY networks.dl_length,
-            generations.food_max,
-            generations.moves_min;""", curs_tuple)
+        # Determine the query string to use.
+        if sweep_type == "network":
+            query_s = dbs.NETWORK_SWEEP
+        elif sweep_type == "p_mutate":
+            query_s = dbs.P_MUTATE_SWEEP
+        elif sweep_type == "p_crossover":
+            query_s = dbs.P_CROSSOVER_SWEEP
+        elif sweep_type == "selection":
+            query_s = dbs.SELECTION_SWEEP
+        elif sweep_type == "moves_limit":
+            query_s = dbs.MOVES_LIMIT_SWEEP
+        elif sweep_type == "population":
+            query_s = dbs.POPULATION_SWEEP
+        elif sweep_type == "generation":
+            query_s = dbs.GENERATION_SWEEP
+        else:
+            # Invalid sweep specified.
+            return
+
+
+        with self.__getCursor() as curs:
+            curs.execute(query_s, curs_tuple)
 
             ret_val = {}
 
             for record in curs:
 
-                dl_length = record[0]
+                sweep_idx = record[0]
                 food_max = record[1]
                 moves_min = record[2]
                 run_id = record[3]
 
-                temp_tuple  = (food_max, moves_min, run_id)
+                if len(record) > 4:
+                    temp_tuple = (food_max, moves_min, run_id, record[4])
+                else:
+                    temp_tuple = (food_max, moves_min, run_id)
 
-                if not ret_val.has_key(dl_length):
-                    ret_val[dl_length] = []
+                if not ret_val.has_key(sweep_idx):
+                    ret_val[sweep_idx] = []
 
-                ret_val[dl_length].append(temp_tuple)
+                ret_val[sweep_idx].append(temp_tuple)
 
             return ret_val
 
