@@ -9,7 +9,7 @@ import plotly.plotly as py
 from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, Figure, Line, Bar
 import time
 
-from ..DBUtils import DBUtils
+from DBUtils import DBUtils
 
 class chart:
     def __init__(self):

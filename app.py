@@ -9,7 +9,7 @@ import mimetypes
 from werkzeug.datastructures import ImmutableMultiDict
 
 from GATools.DBUtils import DBUtils
-from GATools.plot.chart import chart
+from GATools.chart import chart
 
 if os.environ.get('ENABLE_NEW_RELIC', 'False') in (['True', 'true', 'TRUE']):
     import newrelic.agent
