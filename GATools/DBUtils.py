@@ -31,6 +31,9 @@ class VALID_COLUMNS:
         "p_crossover",
         "weight_min",
         "weight_max",
+        "lambda",
+        "variations_id",
+        "algorithm_ver",
         "RowNumber")
 
 class DBUtils:
@@ -46,7 +49,10 @@ class DBUtils:
         "p_mutate",
         "p_crossover",
         "weight_min",
-        "weight_max"]
+        "weight_max",
+        "lambda",
+        "variations_id",
+        "algorithm_ver"]
 
     FILTERS_STRINGS = [
         "Networks",
@@ -54,13 +60,16 @@ class DBUtils:
         "Mutate ID",
         "Selection",
         "Generations",
-        "Population",
+        "Population (" u"\u03BC" ")",
         "Moves Limit",
         "Tournament Size",
         "P(mutate)",
         "P(Crossover)",
         "Min. Weight",
-        "Max. Weight"]
+        "Max. Weight",
+        u"\u03BB",
+        "Variation",
+        "Algorithm"]
 
     def __init__(
         self,
@@ -200,7 +209,8 @@ class DBUtils:
             curs.execute("""SELECT run.id, trails_id, networks_id, mutate_id,
                 host_configs_id, run_date, runtime, hostname, generations,
                 population, moves_limit, sel_tourn_size, p_mutate, p_crossover,
-                weight_min, weight_max, debug, run_config.id, selection_id
+                weight_min, weight_max, debug, run_config.id, selection_id,
+                lambda, variations_id, algorithm_ver
                 FROM run
                 INNER JOIN run_config
                 ON run.run_config_id = run_config.id
@@ -230,6 +240,9 @@ class DBUtils:
                 curr_dict["debug"]           = record[16]
                 curr_dict["run_config_id"]   = record[17]
                 curr_dict["selection_id"]    = record[18]
+                curr_dict["lambda"]          = record[19]
+                curr_dict["variations_id"]   = record[20]
+                curr_dict["algorithm_ver"]   = record[21]
 
                 ret_val[this_run_id]       = curr_dict
 
@@ -312,7 +325,7 @@ class DBUtils:
         query_str = """SELECT
         networks_id, trails_id, mutate_id, selection_id, generations, population,
         moves_limit, sel_tourn_size, p_mutate, p_crossover, weight_min,
-        weight_max
+        weight_max, lambda, variations_id, algorithm_ver
         FROM run_config
         {0};""".format(where_str)
 
@@ -385,6 +398,10 @@ class DBUtils:
             curr_dict["trail_data"]      = np.matrix(result[18])
             curr_dict["select_name"]     = result[19]
             curr_dict["mutate_name"]     = result[20]
+            curr_dict["lambda"]          = result[21]
+            curr_dict["variations_id"]   = result[22]
+            curr_dict["algorithm_ver"]   = result[23]
+            curr_dict["variations_name"] = result[24]
 
             curr_dict["max_food"] = np.bincount(np.squeeze(np.asarray(
                 curr_dict["trail_data"].flatten())))[1]
@@ -401,7 +418,7 @@ class DBUtils:
 
         with self.__getCursor() as curs:
             curs_tuple = (
-                (config_id, ) * 10 +
+                (config_id, ) * 13 +
                 (tuple(id_filters), ) +
                 (config_id, ))
 
@@ -439,9 +456,16 @@ class DBUtils:
                         run_config WHERE id = %s) AND
             	    weight_max =  (SELECT weight_max FROM
                         run_config WHERE id = %s) AND
+                    lambda =  (SELECT lambda FROM
+                        run_config WHERE id = %s) AND
+                    variations_id =  (SELECT variations_id FROM
+                        run_config WHERE id = %s) AND
+                    algorithm_ver =  (SELECT algorithm_ver FROM
+                        run_config WHERE id = %s) AND
             	    networks_id IN %s) AND
             generations.generation = (SELECT generations FROM
-                run_config WHERE id = %s) - 1
+                run_config WHERE id = %s) - 1 AND
+            run.debug IS FALSE
             ORDER BY networks.dl_length,
             generations.food_max,
             generations.moves_min;""", curs_tuple)
@@ -461,8 +485,6 @@ class DBUtils:
                     ret_val[dl_length] = []
 
                 ret_val[dl_length].append(temp_tuple)
-
-            print ret_val
 
             return ret_val
 

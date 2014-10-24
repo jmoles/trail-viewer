@@ -36,6 +36,10 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
                 <dd>{{ run_config["generations"] }}</dd>
             <dt>Population</dt>
                 <dd>{{ run_config["population"] }}</dd>
+            <dt>Variations Type</dt>
+                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/algo.html#deap.algorithms.{{ run_config["variations_name"]}}">{{ run_config["variations_name"]}}</a></dd>
+            <dt>Algorithm Version</dt>
+                <dd>{{ run_config["algorithm_ver"]}}</dd>
         </dl>
     </div>
     <div class="col-md-6">
@@ -47,6 +51,10 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
             {% if run_config["selection_id"] == 1 %}
                 <dt>Tournament Size</dt>
                     <dd>{{ run_config["sel_tourn_size"] }}</dd>
+            {% endif %}
+            {% if run_config["lambda"] is not none %}
+                <dt>&lambda;</dt>
+                    <dd>{{ run_config["lambda"] }}</dd>
             {% endif %}
             <dt>P(Mutate)</dt>
                 <dd>{{ run_config["p_mutate"] }}</dd>

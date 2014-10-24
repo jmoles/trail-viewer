@@ -45,6 +45,10 @@ Simulation Run {{ run_id }}
                 <dd>{{ run_info["generations"] }}</dd>
             <dt>Population</dt>
                 <dd>{{ run_info["population"] }}</dd>
+            <dt>Variations Type</dt>
+                <dd><a href="http://deap.gel.ulaval.ca/doc/dev/api/algo.html#deap.algorithms.{{ config_info["variations_name"]}}">{{ config_info["variations_name"]}}</a></dd>
+            <dt>Algorithm Version</dt>
+                <dd>{{ run_info["algorithm_ver"]}}</dd>
         </dl>
     </div>
     <div class="col-md-4">
@@ -56,6 +60,10 @@ Simulation Run {{ run_id }}
             {% if run_info["selection_id"] == 1 %}
                 <dt>Tournament Size</dt>
                     <dd>{{ config_info["sel_tourn_size"] }}</dd>
+            {% endif %}
+            {% if config_info["lambda"] is not none %}
+                <dt>&lambda;</dt>
+                    <dd>{{ config_info["lambda"] }}</dd>
             {% endif %}
             <dt>P(Mutate)</dt>
                 <dd>{{ run_info["p_mutate"] }}</dd>
