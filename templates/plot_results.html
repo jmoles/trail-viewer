@@ -85,10 +85,10 @@ Simulation Run {{ run_id }}
                 id="igraph" style='border:none' scrolling="no" src="{{ images_l[idx]["url"] }}.embed?width=525&height=500"></iframe>
         </div>
         <div class="row text-center">
-            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.pdf">Download PDF</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.svg">Download SVG</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.jpg">Download JPG</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ images_l[idx]["url"] }}.png">Download PNG</a></button>
+            <a href="{{ images_l[idx]["url"] }}.pdf"><button type="button" class="btn btn-default">Download PDF</button></a>
+            <a href="{{ images_l[idx]["url"] }}.svg"><button type="button" class="btn btn-default">Download SVG</button></a>
+            <a href="{{ images_l[idx]["url"] }}.jpg"><button type="button" class="btn btn-default">Download JPG</button></a>
+            <a href="{{ images_l[idx]["url"] }}.png"><button type="button" class="btn btn-default">Download PNG</button></a>
         </div>
 
     </div>

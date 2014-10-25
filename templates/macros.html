@@ -47,7 +47,7 @@
 <div class="row">
     <div class="col-md-12">
         {% for curr_sweep in url_l %}
-            <button type="button" class="btn btn-default"><a href="{{ curr_sweep[1] }}">{{ curr_sweep[0]|title }}</a></button>
+            <a href="{{ curr_sweep[1] }}"><button type="button" class="btn btn-default">{{ curr_sweep[0]|title }}</button></a>
         {% endfor %}
     </div>
 </div>

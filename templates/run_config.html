@@ -41,10 +41,10 @@ Run Configuration {{ config_id }} <small>Used for {{ num_runs }} runs</small>
         </div>
 
         <div class="text-center">
-            <button type="button" class="btn btn-default"><a href="{{ group_images_l[idx]["pdf"] }}">Download PDF</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ group_images_l[idx]["eps"] }}">Download EPS</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ group_images_l[idx]["jpg"] }}">Download JPG</a></button>
-            <button type="button" class="btn btn-default"><a href="{{ group_images_l[idx]["png"] }}">Download PNG</a></button>
+            <a href="{{ group_images_l[idx]["pdf"] }}"><button type="button" class="btn btn-default">Download PDF</button></a>
+            <a href="{{ group_images_l[idx]["eps"] }}"><button type="button" class="btn btn-default">Download EPS</button></a>
+            <a href="{{ group_images_l[idx]["jpg"] }}"><button type="button" class="btn btn-default">Download JPG</button></a>
+            <a href="{{ group_images_l[idx]["png"] }}"><button type="button" class="btn btn-default">Download PNG</button></a>
         </div>
     </div>
     {% endfor %}

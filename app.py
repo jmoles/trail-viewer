@@ -266,7 +266,7 @@ def config_by_id(config_id):
     config_info =  pgdb.fetchConfigInfo(config_id)
 
     # Determine the sweep URL, if this config_id is a network in the group.
-    sweep_url_l = build_sweeps_list(config_info["networks_id"])
+    sweep_url_l = build_sweeps_list(config_id)
 
     trail_name   = pgdb.getTrails()[config_info["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[config_info["networks_id"]]
@@ -661,7 +661,7 @@ def sweep_chart(config_id):
     ]
 
     # Build the list of URLs to other sweep charts.
-    sweel_url_l = build_sweeps_list(config_id, sweep)
+    sweep_url_l = build_sweeps_list(config_id, sweep)
 
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
@@ -673,7 +673,7 @@ def sweep_chart(config_id):
         sweep_title = sweep_title,
         config_id = config_id,
         config_info = config_info,
-        sweep_url_l = sweel_url_l
+        sweep_url_l = sweep_url_l
         )
 
 
