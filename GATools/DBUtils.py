@@ -433,6 +433,8 @@ class DBUtils:
         elif sweep_type == "p_mutate_crossover":
             query_s = dbs.P_MUTATE_CROSSOVER_SWEEP
             is_3d = True
+        elif sweep_type == "tournament":
+            query_s = dbs.TOURNAMENT_SWEEP
         else:
             # Invalid sweep specified.
             return

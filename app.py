@@ -30,10 +30,12 @@ NETWORK_SWEEP_GROUPS = [
 ]
 
 VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
-    "moves_limit", "population", "generation", "p_mutate_crossover"]
+    "moves_limit", "population", "generation", "p_mutate_crossover",
+    "tournament"]
 
 SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
-    "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)"]
+    "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)",
+    "Tournament"]
 
 app = Flask(__name__)
 
@@ -121,14 +123,19 @@ def render_error(code=400,
             error=error,
             fix=fix), 400
 
-def build_sweeps_list(config_id, exclude=None):
+def build_sweeps_list(config_id, config_info, exclude=None):
     ret_val = []
 
     for idx, curr_sweep in enumerate(VALID_SWEEPS):
         # Skip if not compatiable with network sweeps.
-        if curr_sweep == "network" and (config_id not in
+        if curr_sweep == "network" and (config_info["networks_id"] not in
             [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
                 continue
+
+        # Skip if not a tournment style selection for tournament sweeps.
+        if curr_sweep == "tournament" and config_info["selection_id"] != 1:
+            continue
+
         # Or skip if it is excluded.
         if curr_sweep == exclude:
             continue
@@ -266,7 +273,7 @@ def config_by_id(config_id):
     config_info =  pgdb.fetchConfigInfo(config_id)
 
     # Determine the sweep URL, if this config_id is a network in the group.
-    sweep_url_l = build_sweeps_list(config_id)
+    sweep_url_l = build_sweeps_list(config_id, config_info)
 
     trail_name   = pgdb.getTrails()[config_info["trails_id"]]["name"]
     network_name = pgdb.getNetworks()[config_info["networks_id"]]
@@ -661,7 +668,7 @@ def sweep_chart(config_id):
     ]
 
     # Build the list of URLs to other sweep charts.
-    sweep_url_l = build_sweeps_list(config_id, sweep)
+    sweep_url_l = build_sweeps_list(config_id, config_info, sweep)
 
     finish_time_s = str((datetime.datetime.now() - start).total_seconds())
 
