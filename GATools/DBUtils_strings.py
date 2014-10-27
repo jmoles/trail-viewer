@@ -226,10 +226,11 @@ class DBUtils_strings:
             population =  (SELECT population FROM
                 run_config WHERE id = %s) AND
             moves_limit =  (SELECT moves_limit FROM
-                run_config WHERE id = %s) AND
-            COALESCE(sel_tourn_size,-1) = (
-                SELECT COALESCE(sel_tourn_size,-1) FROM
-                    run_config WHERE id = %s) AND
+                run_config WHERE id = %s) AND (
+                COALESCE(sel_tourn_size,-1) = (SELECT CASE
+                    WHEN selection_id=1 THEN sel_tourn_size ELSE -1 END
+                    FROM run_config WHERE id = %s) OR
+                COALESCE(sel_tourn_size,-1) = -1) AND
             p_mutate =  (SELECT p_mutate FROM
                 run_config WHERE id = %s) AND
             p_crossover =  (SELECT p_crossover FROM
