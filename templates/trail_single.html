@@ -41,8 +41,8 @@ window.onload = function() {
         <dt>Download Image:</dt>
             <dd>
                 <select id="trail_download" name="trail_download_list"
-                onchange="window.open(this.value,'','');">
-                    <option>Choose a format...</option>
+                onchange="window.open(this.value, '_self','');">
+                    <option value="#">Choose a format...</option>
                     {% for curr_item in image_dropdown_list %}
                         <option value="{{ request.path + "." + curr_item }}">
                             {{ curr_item }}
