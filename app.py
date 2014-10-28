@@ -19,7 +19,6 @@ if os.environ.get('ENABLE_NEW_RELIC', 'False') in (['True', 'true', 'TRUE']):
     newrelic.agent.initialize(os.environ.get('NEW_RELIC_CONFIG_FILE',
         'newrelic.ini'))
 
-
 DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
     ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False
@@ -48,6 +47,14 @@ PIL_DROPDOWN_LIST = ["bmp", "eps", "gif", "jpg", "png", "pdf", "tif"]
 app = Flask(__name__)
 
 pgdb = DBUtils()
+
+# Enable logging
+if not app.debug:
+    import logging
+    from logging.handlers import RotatingFileHandler
+    file_handler = RotatingFileHandler("errors.log", backupCount=5)
+    file_handler.setLevel(logging.WARNING)
+    app.logger.addHandler(file_handler)
 
 
 ### Begin Helper Functions ###
