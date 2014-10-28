@@ -452,8 +452,6 @@ class DBUtils_strings:
                 run_config WHERE id = %s) AND
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)) AND
-    generations.generation = (SELECT generations FROM
-        run_config WHERE id = %s) - 1 AND
     run.debug IS FALSE
     ORDER BY run_config.generations,
     generations.food_max,

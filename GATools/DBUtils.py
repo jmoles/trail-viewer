@@ -447,6 +447,8 @@ class DBUtils:
                 (config_id, ) * 14 +
                 (tuple(id_filters), ) +
                 (config_id, ))
+        elif sweep_type == "generation":
+            curs_tuple = ((config_id, ) * (14 - is_3d))
         else:
             curs_tuple = ((config_id, ) * (15 - is_3d))
 
