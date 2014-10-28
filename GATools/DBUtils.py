@@ -73,23 +73,18 @@ class DBUtils:
         "Variation",
         "Algorithm"]
 
-    def __init__(
-        self,
-        host=os.environ.get("PSYCOPG2_DB_HOST", "localhost"),
-        db=os.environ.get("PSYCOPG2_DB_DB", "jmoles"),
-        user=os.environ.get("PSYCOPG2_DB_USER", "jmoles"),
-        password=os.environ.get("PSYCOPG2_DB_PASS", "password"),
-        port=os.environ.get("PSYCOPG2_DB_PORT", 5434),
-        debug=False):
+    def __init__(self, dsn=None):
 
-        self.__dsn = (
-            "host={0} dbname={1} user={2} password={3} port={4}".format(
-                host, db, user, password, port))
+        if not dsn:
+            dsn = (
+                "host={0} dbname={1} user={2} password={3} port={4}".format(
+                    os.environ.get("PGHOST", "localhost"),
+                    os.environ.get("PGDATABASE", "jmoles"),
+                    os.environ.get("PGUSER", "jmoles"),
+                    os.environ.get("PGPASSWORD", "password"),
+                    os.environ.get("PGPORT", 5432)))
 
-        self.__pool        = psycopg2.pool.SimpleConnectionPool(
-            1,
-            10,
-            self.__dsn)
+        self.__pool        = psycopg2.pool.SimpleConnectionPool(1, 10, dsn)
 
     @contextmanager
     def __getCursor(self):
