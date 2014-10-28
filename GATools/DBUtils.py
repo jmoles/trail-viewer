@@ -435,6 +435,8 @@ class DBUtils:
             is_3d = True
         elif sweep_type == "tournament":
             query_s = dbs.TOURNAMENT_SWEEP
+        elif sweep_type == "lambda":
+            query_s = dbs.LAMBDA_SWEEP
         else:
             # Invalid sweep specified.
             return

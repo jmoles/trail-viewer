@@ -33,11 +33,11 @@ NETWORK_SWEEP_GROUPS = [
 
 VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
     "moves_limit", "population", "generation", "p_mutate_crossover",
-    "tournament"]
+    "tournament", "lambda"]
 
 SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
     "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)",
-    "Tournament"]
+    "Tournament Size", u"\u03BB"]
 
 VALID_PIL_EXTENSION = ["bmp", "eps", "gif", "jpg", "jpeg",
     "png", "pdf", "tiff", "tif"]
