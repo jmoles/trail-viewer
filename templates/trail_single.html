@@ -38,6 +38,18 @@ window.onload = function() {
             <dd>{{ trail_data["dimension_str"] }}</dd>
         <dt>Recommended Moves</dt>
             <dd>{{ trail_data["moves"] }}</dd>
+        <dt>Download Image:</dt>
+            <dd>
+                <select id="trail_download" name="trail_download_list"
+                onchange="window.open(this.value,'','');">
+                    <option>Choose a format...</option>
+                    {% for curr_item in image_dropdown_list %}
+                        <option value="{{ request.path + "." + curr_item }}">
+                            {{ curr_item }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </dd>
     </dl>
 </div>
 

@@ -3,8 +3,11 @@ import json
 import math
 import os
 import re
+import StringIO
 import base64
-from flask import Flask, render_template, request, make_response, Response, url_for
+from PIL import Image, ImageDraw
+from flask import Flask, render_template, request, make_response
+from flask import Response, url_for, send_file
 import mimetypes
 from werkzeug.datastructures import ImmutableMultiDict
 
@@ -36,6 +39,11 @@ VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
 SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
     "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)",
     "Tournament"]
+
+VALID_PIL_EXTENSION = ["bmp", "eps", "gif", "jpg", "jpeg",
+    "png", "pdf", "tiff", "tif"]
+
+PIL_DROPDOWN_LIST = ["bmp", "eps", "gif", "jpg", "png", "pdf", "tif"]
 
 app = Flask(__name__)
 
@@ -71,18 +79,7 @@ def get_trails(trail_id):
 
     # Check that the user requested a valid trail.
     if trail_id > 0 and trail_id not in raw_data:
-        title="Invalid Trail"
-        error = """
-        The trail id {0} that you have requested is not valid!""".format(
-            trail_id,
-            url_for('network_by_id'))
-        fix = """
-        Want to try browsing the <a href="{0}">list</a> of valid trails?
-        """.format(url_for('trail_by_id'))
-        return render_template('400.html',
-            title=title,
-            error=error,
-            fix=fix), 400
+        return invalid_trail_error(trail_id)
 
     # Trail ID is valid.
     # Calculate the food count and trail dimension str.
@@ -145,6 +142,130 @@ def build_sweeps_list(config_id, config_info, exclude=None):
                 url_for('sweep_chart', config_id=config_id, sweep=curr_sweep)))
 
     return ret_val
+
+
+def invalid_trail_error(trail_id):
+    title="Invalid Trail"
+    error = """
+    The trail id {0} that you have requested is not valid!""".format(
+        trail_id)
+    fix = """
+    Want to try browsing the <a href="{0}">list</a> of valid trails?
+    """.format(url_for('trail_by_id'))
+    return render_template('400.html',
+        title=title,
+        error=error,
+        fix=fix), 400
+
+
+def build_trail_image(trail_id, border=1, box_size=32):
+    """ Builds a PIL image of the trail and returns the pil_img."""
+
+    # Constants for the rendering.
+    BG_FILL_COLORS = [      # The background color of the squares.
+        (255, 255, 255, 255),
+        (219, 83, 50),
+        (255, 255, 255, 255),
+        (255, 255, 255, 255),
+        (255, 255, 255, 255),
+        (255, 255, 255, 255),
+        None,
+        (74, 101, 120),
+        (141, 64, 60),
+        (204, 204, 204),
+    ]
+    ANT_COLOR = (           # The fill and stroke of ant.
+        (0, 0, 0),
+        (0, 0, 0)
+    )
+    FOOD_COLOR = (          # The fill and stroke of food pellets.
+        (244, 157, 51),
+        (0, 0, 0),
+    )
+    BOX_OUTLINE = (0, 0, 0) # The outline of the boxes.
+
+    # Fetch the trails.
+    try:
+        TRAIL_DATA = pgdb.getTrails()[trail_id]['data']
+    except KeyError:
+        # This means the trail is not valid.
+        return invalid_trail_error(trail_id)
+
+    # Determin the size of the trail
+    IMAGE_SIZE = (
+        (len(TRAIL_DATA) + 2) * box_size,
+        (len(TRAIL_DATA[0]) + 2) * box_size
+    )
+
+    im = Image.new("RGBA", IMAGE_SIZE, (255, 255, 255, 0))
+
+    im_draw = ImageDraw.Draw(im)
+
+    # Loop through and draw each grid point.
+    for y in range(0, len(TRAIL_DATA)):
+        for x in range(0, len(TRAIL_DATA[y])):
+
+            # Determine the corners for the box.
+            # Shift by 1 to have a margin on all sides of a single box.
+            top_corner = (
+                (x + border) * box_size,
+                (y + border) * box_size
+            )
+            bottom_corner = (
+                (x + border + 1) * (box_size) - 1,
+                (y + border + 1) * (box_size) - 1
+            )
+
+            # Draw the box and fill it with the right color.
+            im_draw.rectangle(
+                [top_corner, bottom_corner],
+                fill=BG_FILL_COLORS[TRAIL_DATA[y][x]],
+                outline=BOX_OUTLINE,
+            )
+
+            # Draw ant if it is in this square.
+            if TRAIL_DATA[y][x] in (2, 3, 4, 5):
+                ANGLES = [180, 270, 0, 90]
+                angle = math.radians(ANGLES[TRAIL_DATA[y][x] - 2])
+                ca = math.cos(angle)
+                sa = math.sin(angle)
+
+                x_offset = x * box_size + border * box_size
+                y_offset = y * box_size + border * box_size
+
+                triangle_points = [(
+                    x_offset + box_size * (0.5 + -0.25 * ca - -0.25 * sa),
+                    y_offset + box_size * (0.5 + -0.25 * ca + -0.25 * sa)
+                ),
+                (
+                    x_offset + box_size * (0.5 + 0.0 * ca - 0.25 * sa),
+                    y_offset + box_size * (0.5 + 0.25 * ca + 0.0 * sa)
+                ),
+                (
+                    x_offset + box_size * (0.5 + 0.25 * ca - -0.25 * sa),
+                    y_offset + box_size * (0.5 + -0.25 * ca + 0.25 * sa)
+                )]
+
+                # Round all of these values
+                triangle_points = [
+                    (round(m), round(n)) for m, n in triangle_points]
+
+                im_draw.polygon(
+                    triangle_points,
+                    outline=ANT_COLOR[1],
+                    fill=ANT_COLOR[0])
+
+            # Draw the food pellet if it is in this square.
+            if TRAIL_DATA[y][x] == 1:
+                im_draw.ellipse(
+                    [tuple([(x + box_size / 4) for x in top_corner]),
+                        tuple([(x - box_size / 4) for x in bottom_corner])],
+                    fill=FOOD_COLOR[0],
+                    outline=FOOD_COLOR[1]
+                )
+
+    return im, None
+
 
 
 ### End of Helper Functions.
@@ -216,10 +337,6 @@ def run_listing():
         table_data=table_data,
         filter_list=filter_list,
         time_sec=finish_time_s)
-
-@app.route('/new_index')
-def index():
-    pass
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -324,7 +441,7 @@ def trail_by_id(trail_id):
             "trail_single.html",
             id=trail_id,
             trail_data=table_data[trail_id],
-            num_runs=0,
+            image_dropdown_list=sorted(PIL_DROPDOWN_LIST),
             time_sec=finish_time_s)
 
 
@@ -366,6 +483,57 @@ INSERT INTO trails (id, name, moves, init_rot, trail_data) VALUES
 
 
     return Response(body, content_type="text/plain;charset=UTF-8")
+
+@app.route('/trail/<int:trail_id>.<extension>')
+def show_trail_image(trail_id, extension):
+    NO_RGBA_EXT = ["bmp", "eps", "pdf"]
+
+    if extension not in VALID_PIL_EXTENSION:
+        title="Invalid Extension Selected"
+        error = """
+        The extension ({0}) that you have requested is not valid!""".format(
+            extension)
+        fix = """
+        You may select from one of these: {0}.
+        """.format(", ".join(sorted(VALID_PIL_EXTENSION)))
+        return render_template('400.html',
+            title=title,
+            error=error,
+            fix=fix), 400
+
+    # Size of border to place around image and boxes in image.
+    # This is multiplied by the size of the boxes.
+    image_border = int(request.args.get('border', default=1))
+    box_size = int(request.args.get('box_size', default=32))
+
+    # Any pre-processing fixes here.
+    if extension == "jpg":
+        fixed_ext = "jpeg"
+    elif extension == "tif":
+        fixed_ext = "tiff"
+    else:
+        fixed_ext = extension
+
+    pil_img, return_code = build_trail_image(trail_id, border=image_border,
+        box_size=box_size)
+
+    if return_code == 400:
+        # An error has occoured. Show error and exit.
+        return pil_img, return_code
+
+    # Any post-processing fixes here.
+    if fixed_ext in NO_RGBA_EXT:
+        if pil_img.mode not in ("L", "RGB", "CMYK"):
+            pil_img = pil_img.convert("RGB")
+
+    img_io = StringIO.StringIO()
+    pil_img.save(img_io, fixed_ext)
+    img_io.seek(0)
+
+    if fixed_ext == "pdf":
+        return send_file(img_io, mimetype='application/pdf')
+    else:
+        return send_file(img_io, mimetype='image/' + fixed_ext)
 
 @app.route('/selection', defaults={'select_id' : -1})
 @app.route('/selection/<int:select_id>')
