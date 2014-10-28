@@ -27,7 +27,7 @@ class chart:
 
         # Sign in, if necessary.
         if py.get_credentials()["username"] == "":
-            py.sign_in("jmoles", "yjmmis1cvi")
+            py.sign_in("jmoles", os.environ.get('PLOTLY_API_KEY'))
 
         return py.plot(
             fig,
