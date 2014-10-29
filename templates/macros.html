@@ -46,9 +46,20 @@
 {% macro sweep_urls_block(url_l) -%}
 <div class="row">
     <div class="col-md-12">
-        {% for curr_sweep in url_l %}
-            <a href="{{ curr_sweep[1] }}"><button type="button" class="btn btn-default">{{ curr_sweep[0]|title }}</button></a>
-        {% endfor %}
+        <dl class="dl-horizontal">
+            <dt>Sweep Chart</dt>
+                <dd>
+                    <select id="sweep_dd" name="sweep_dd_list"
+                    onchange="window.open(this.value, '_self','');">
+                        <option value="#">Choose a sweep...</option>
+                        {% for curr_sweep in url_l %}
+                            <option value="{{ curr_sweep[1] }}">
+                                {{ curr_sweep[0] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </dd>
+        </dl>
     </div>
 </div>
 {%- endmacro %}

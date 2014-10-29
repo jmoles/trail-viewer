@@ -157,7 +157,8 @@ class chart:
         return plot_urls
 
     @staticmethod
-    def sweep_charts(db_data, config_id, config_info, sweep_type, x_label):
+    def sweep_charts(db_data, config_id, config_info, sweep_type, x_label,
+        y_label=None):
         """ Given a set of db_data from
         DBUtils.fetch_run_config_sweep_by_network along with the config_id,
         and maximum amount of food, generates a food and moves taken sweep
@@ -205,9 +206,11 @@ class chart:
                 config_info["moves_limit"])
             chart_set_config["moves-taken"]["max-title"] = "Limit"
 
-        if sweep_type == "p_mutate_crossover":
-            chart_set_config["food"]["xaxis"] = "P(mutate)"
-            chart_set_config["food"]["yaxis"] = "P(crossover)"
+        if (sweep_type == "p_mutate_crossover" or
+            sweep_type == "dl_length_hidden"):
+
+            chart_set_config["food"]["xaxis"] = x_label
+            chart_set_config["food"]["yaxis"] = y_label
             chart_set_config["food"]["zaxis"] = "Food Consumed"
             chart_set_config["food"]["type"] = Heatmap
             chart_set_config["food"]["val-func"] = [max]

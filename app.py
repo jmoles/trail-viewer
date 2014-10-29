@@ -26,6 +26,7 @@ WTF_I18N_ENABLED = False
 VALID_SWEEPS = [
     "dl_length",
     "hidden",
+    "dl_length_hidden",
     "p_mutate",
     "p_crossover",
     "selection",
@@ -38,7 +39,8 @@ VALID_SWEEPS = [
 
 SWEEP_BUTTON_STR = [
     "Delay Line Length",
-    "Hidden Neuron Count",
+    "Hidden Perceptron Count",
+    "DL Len / Hidden Perceptron",
     "P(Mutate)",
     "P(Crossover)",
     "Selection",
@@ -808,8 +810,12 @@ def sweep_chart(config_id):
     if sweep == "p_mutate_crossover":
         x_label = "P(mutate)"
         y_label = "P(crossover)"
+    elif sweep == "dl_length_hidden":
+        x_label = "Delay Line Length"
+        y_label = "Hidden Layer Perceptron Count"
     else:
         x_label = sweep_title
+        y_label = None
 
     sweep_data = pgdb.fetch_run_config_sweep(config_id, sweep, id_filters)
 
@@ -819,7 +825,8 @@ def sweep_chart(config_id):
         config_id,
         config_info,
         sweep,
-        x_label=x_label)
+        x_label=x_label,
+        y_label=y_label)
 
     # Have the data. Now need to generate a plot.
     images_l = [
