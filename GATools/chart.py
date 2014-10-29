@@ -5,10 +5,11 @@ import base64
 import matplotlib.pyplot as pyplot
 import matplotlib.backends.backend_agg as pltagg
 import numpy as np
+from scipy import stats
 import plotly.plotly as py
 from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, ZAxis
 from plotly.graph_objs import Figure, Line, Bar, Scatter3d, Scene, Surface
-from plotly.graph_objs import Heatmap
+from plotly.graph_objs import Heatmap, ErrorY
 import time
 
 from DBUtils import DBUtils
@@ -179,8 +180,7 @@ class chart:
             "food" : {
                 "title" : "Food vs. Generations Sweep",
                 "db-idx" : 0,
-                "val-func" : [max, np.average, np.std],
-                "type" : Scatter,
+                "val-func" : [max, np.average],
                 "plot-mode" : "lines",
                 "xaxis" : x_label.title(),
                 "yaxis" : "Food Consumed",
@@ -191,8 +191,7 @@ class chart:
             "moves-taken" : {
                 "title" : "Moves Taken vs. Generations Sweep",
                 "db-idx" : 1,
-                "val-func" : [min, np.average, np.std],
-                "type" : Scatter,
+                "val-func" : [min, np.average],
                 "plot-mode" : "lines",
                 "xaxis" : x_label.title(),
                 "yaxis" : "Moves Taken",
@@ -228,6 +227,7 @@ class chart:
                 x_vals = []
                 y_vals = []
                 z_vals = []
+                y_std_dev = []
 
                 if is_3d:
                     y_vals = sorted(db_data.keys())
@@ -247,17 +247,37 @@ class chart:
                         z=z_vals,
                         name=settings["label"][idx].title()
                     )
+
+                    np.std
                 else:
                     for curr_x in sorted(db_data.keys()):
                         y_vals.append(this_func(
                             [x[settings["db-idx"]] for x in db_data[curr_x]]))
 
-                    this_trace = settings["type"](
-                        x=x_label_vals,
-                        y=y_vals,
-                        mode=settings["plot-mode"],
-                        name=settings["label"][idx].title()
-                    )
+                        if this_func == np.average:
+                            y_std_dev.append(stats.sem(
+                                [x[settings["db-idx"]] for x in db_data[curr_x]]))
+
+                    if this_func == np.average:
+                        this_trace = Scatter(
+                            x=x_label_vals,
+                            y=y_vals,
+                            mode=settings["plot-mode"],
+                            name=settings["label"][idx].title(),
+                            error_y=ErrorY(
+                                type='data',
+                                array=y_std_dev,
+                                visible=True,
+                            )
+                        )
+                    else:
+
+                        this_trace = Scatter(
+                            x=x_label_vals,
+                            y=y_vals,
+                            mode=settings["plot-mode"],
+                            name=settings["label"][idx].title()
+                        )
 
 
                 traces_list.append(this_trace)

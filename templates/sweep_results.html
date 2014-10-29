@@ -12,6 +12,7 @@ Sweep by {{sweep_title|title}} on Configuration <a href="{{url_for('config_by_id
 <h2>Run {{ config_id }} Configuration</h2>
 {{ cvmacros.run_configuration(config_info) }}
 <h2>Charts</h2>
+<p>Error bars indicate the <a href="http://en.wikipedia.org/wiki/Standard_deviation">standard deviation</a>.
 <div class="row">
     {% for idx in range(images_l|count) %}
     <div class="col-md-6">
