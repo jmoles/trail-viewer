@@ -1,5 +1,5 @@
 class DBUtils_strings:
-    NETWORK_SWEEP = """SELECT
+    DL_LENGTH_SWEEP = """SELECT
     networks.dl_length, generations.food_max,
     generations.moves_min, run.id
     FROM run
@@ -13,6 +13,21 @@ class DBUtils_strings:
         SELECT id
         FROM run_config
         WHERE
+            networks_id IN (SELECT id
+                FROM networks
+                WHERE
+                    hidden_count = (
+                        SELECT hidden_count FROM networks WHERE id=(
+                            SELECT networks_id FROM run_config WHERE id=%s)
+                        ) AND
+                    output_count = (
+                        SELECT output_count FROM networks WHERE id=(
+                            SELECT networks_id FROM run_config WHERE id=%s)
+                        ) AND
+                    dl_length > 0 AND
+                    name like 'Jeff-like NN MDL%%'
+                ORDER BY input_count
+            ) AND
             trails_id =  (SELECT trails_id FROM
                 run_config WHERE id = %s) AND
             mutate_id =  (SELECT mutate_id FROM
@@ -41,8 +56,7 @@ class DBUtils_strings:
             variations_id =  (SELECT variations_id FROM
                 run_config WHERE id = %s) AND
             algorithm_ver =  (SELECT algorithm_ver FROM
-                run_config WHERE id = %s) AND
-            networks_id IN %s) AND
+                run_config WHERE id = %s)) AND
     generations.generation = (SELECT generations FROM
         run_config WHERE id = %s) - 1 AND
     run.debug IS FALSE

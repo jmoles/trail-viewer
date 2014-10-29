@@ -406,13 +406,13 @@ class DBUtils:
 
         return curr_dict
 
-    def fetch_run_config_sweep(self, config_id, sweep_type="network", id_filters=None):
+    def fetch_run_config_sweep(self, config_id, sweep_type="dl_length", id_filters=None):
         # Means query string returns two values (x, y) rather than just one (x)
         is_3d = False
 
         # Determine the query string to use.
-        if sweep_type == "network":
-            query_s = dbs.NETWORK_SWEEP
+        if sweep_type == "dl_length":
+            query_s = dbs.DL_LENGTH_SWEEP
         elif sweep_type == "p_mutate":
             query_s = dbs.P_MUTATE_SWEEP
         elif sweep_type == "p_crossover":
@@ -437,11 +437,8 @@ class DBUtils:
             return
 
         # Create the tuple of values to place in cursor.
-        if sweep_type == "network":
-            curs_tupe = curs_tuple = (
-                (config_id, ) * 14 +
-                (tuple(id_filters), ) +
-                (config_id, ))
+        if sweep_type == "dl_length":
+            curs_tuple = ((config_id, ) * 17)
         elif sweep_type == "generation":
             curs_tuple = ((config_id, ) * (14 - is_3d))
         else:

@@ -7,7 +7,7 @@ import StringIO
 import base64
 from PIL import Image, ImageDraw
 from flask import Flask, render_template, request, make_response
-from flask import Response, url_for, send_file
+from flask import Response, url_for, send_file, redirect
 import mimetypes
 from werkzeug.datastructures import ImmutableMultiDict
 
@@ -23,21 +23,13 @@ DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
     ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False
 
-NETWORK_SWEEP_GROUPS = [
-    [2, 3, 4, 5, 6, 7, 8, 9, 10],
-    [11, 12, 13, 14, 15, 16, 17, 18, 19, 168, 169, 170, 171, 172, 173],
-    [20, 21, 22, 23, 24, 25, 26, 27, 28],
-    [29, 30, 31, 32, 33, 34, 35, 36, 37, 162, 163, 164, 165, 166, 167],
-    [38]
-]
-
-VALID_SWEEPS = ["network", "p_mutate", "p_crossover", "selection",
+VALID_SWEEPS = ["dl_length", "p_mutate", "p_crossover", "selection",
     "moves_limit", "population", "generation", "p_mutate_crossover",
     "tournament", "lambda"]
 
-SWEEP_BUTTON_STR = ["Network", "P(Mutate)", "P(Crossover)", "Selection",
+SWEEP_BUTTON_STR = ["Delay Line Length", "P(Mutate)", "P(Crossover)", "Selection",
     "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)",
-    "Tournament Size", u"\u03BB"]
+    "Tournament Size", "Lambda Size"]
 
 VALID_PIL_EXTENSION = ["bmp", "eps", "gif", "jpg", "jpeg",
     "png", "pdf", "tiff", "tif"]
@@ -131,11 +123,6 @@ def build_sweeps_list(config_id, config_info, exclude=None):
     ret_val = []
 
     for idx, curr_sweep in enumerate(VALID_SWEEPS):
-        # Skip if not compatiable with network sweeps.
-        if curr_sweep == "network" and (config_info["networks_id"] not in
-            [item for sl in NETWORK_SWEEP_GROUPS for item in sl]):
-                continue
-
         # Skip if not a tournment style selection for tournament sweeps.
         if curr_sweep == "tournament" and config_info["selection_id"] != 1:
             continue
@@ -773,7 +760,12 @@ def sweep_chart(config_id):
     """
     start = datetime.datetime.now()
 
-    sweep = request.args.get('sweep', default="network")
+    sweep = request.args.get('sweep', default="population")
+
+    # Here for legacy mapping. dl_length was previously called network.
+    if sweep == "network":
+        return redirect(url_for(
+            'sweep_chart', config_id=config_id, sweep='dl_length'))
 
     # Check that the sweep is valid.
     if sweep not in VALID_SWEEPS:
@@ -786,7 +778,7 @@ def sweep_chart(config_id):
     config_info =  pgdb.fetchConfigInfo(config_id)
 
     # The title is the sweep type unless the type of sweep changes it.
-    sweep_title = sweep
+    sweep_title = SWEEP_BUTTON_STR[VALID_SWEEPS.index(sweep)]
 
     # The id_filters is None unless sweep changes it.
     id_filters = None
@@ -795,26 +787,7 @@ def sweep_chart(config_id):
     # valus from DB unless overriden in this variable
     x_vals = None
 
-    if sweep == "network":
-        # Sweep across the networks
-        x_label = "Delay Line Length"
-
-        # TODO: Query NETWORK_SWEEP_GROUPS from database with RE rather than static.
-        # Find the network group that this config is part of.
-        id_filters = [x for x in NETWORK_SWEEP_GROUPS if config_info["networks_id"] in x][0]
-    elif sweep == "p_mutate":
-        sweep_title = "P(mutate)"
-    elif sweep == "p_crossover":
-        sweep_title = "P(crossover)"
-    elif sweep == "moves_limit":
-        sweep_title = "Moves Limit"
-    elif sweep == "p_mutate_crossover":
-        sweep_title = "P(mutate) and P(crossover)"
-
-
-    if sweep == "network":
-        x_label = "Delay Line Length"
-    elif sweep == "p_mutate_crossover":
+    if sweep == "p_mutate_crossover":
         x_label = "P(mutate)"
         y_label = "P(crossover)"
     else:
