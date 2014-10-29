@@ -413,6 +413,8 @@ class DBUtils:
         # Determine the query string to use.
         if sweep_type == "dl_length":
             query_s = dbs.DL_LENGTH_SWEEP
+        elif sweep_type == "hidden":
+            query_s = dbs.HIDDEN_COUNT_SWEEP
         elif sweep_type == "p_mutate":
             query_s = dbs.P_MUTATE_SWEEP
         elif sweep_type == "p_crossover":
@@ -437,7 +439,7 @@ class DBUtils:
             return
 
         # Create the tuple of values to place in cursor.
-        if sweep_type == "dl_length":
+        if sweep_type == "dl_length" or sweep_type == "hidden":
             curs_tuple = ((config_id, ) * 17)
         elif sweep_type == "generation":
             curs_tuple = ((config_id, ) * (14 - is_3d))

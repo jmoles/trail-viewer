@@ -23,13 +23,31 @@ DEBUG = os.environ.get('FLASK_DEBUG_MODE', 'False') in (
     ['True', 'true', 'TRUE'])
 WTF_I18N_ENABLED = False
 
-VALID_SWEEPS = ["dl_length", "p_mutate", "p_crossover", "selection",
-    "moves_limit", "population", "generation", "p_mutate_crossover",
-    "tournament", "lambda"]
+VALID_SWEEPS = [
+    "dl_length",
+    "hidden",
+    "p_mutate",
+    "p_crossover",
+    "selection",
+    "moves_limit",
+    "population",
+    "generation",
+    "p_mutate_crossover",
+    "tournament",
+    "lambda"]
 
-SWEEP_BUTTON_STR = ["Delay Line Length", "P(Mutate)", "P(Crossover)", "Selection",
-    "Moves Limit", "Population", "Generations", "P(Mutate)/P(Crossover)",
-    "Tournament Size", "Lambda Size"]
+SWEEP_BUTTON_STR = [
+    "Delay Line Length",
+    "Hidden Neuron Count",
+    "P(Mutate)",
+    "P(Crossover)",
+    "Selection",
+    "Moves Limit",
+    "Population",
+    "Generations",
+    "P(Mutate)/P(Crossover)",
+    "Tournament Size",
+    "Lambda Size"]
 
 VALID_PIL_EXTENSION = ["bmp", "eps", "gif", "jpg", "jpeg",
     "png", "pdf", "tiff", "tif"]
