@@ -238,27 +238,23 @@ class chart:
                     # Need to find the length of x and min/max x to
                     # figure out the labels and empty spots on heat chart.
                     len_y = len(y_vals)
-                    len_x = 0
-                    min_x = sys.maxint
-                    max_x = 0
+                    x_vals = []
                     for cy in y_vals:
                         curr_x = sorted(db_data[cy].keys())
-                        if len(curr_x) > len_x: len_x = len(curr_x)
-                        if max(curr_x) > max_x: max_x = max(curr_x)
-                        if min(curr_x) < min_x: min_x = min(curr_x)
+                        x_vals.extend(curr_x)
 
-                    # Create the labels for the x-axis and offset the lowest
-                    # value so that it sits at position 0 in this_z.
-                    x_vals = range(min_x, max_x + 1)
-                    x_offset = max_x - len_x
+                    x_vals = list(set(x_vals))
+                    x_vals.sort()
 
                     # Go through all of the y/x values and fill in z.
                     for cy in y_vals:
-                        this_z = [None] * (len_x + 1)
+                        this_z = dict.fromkeys(x_vals)
                         for cx in sorted(db_data[cy].keys()):
-                            print "cx: {0} cx - offset: {1}".format(cx, cx - x_offset)
-                            this_z[cx - x_offset] = this_func(
+                            this_z[cx] = this_func(
                                 [x[settings["db-idx"]] for x in db_data[cy][cx]])
+
+                        this_z = [myz[1] for myz in sorted(this_z.items())]
+                        print "this_z_items: {0}".format(this_z)
                         z_vals.append(this_z)
 
                     this_trace = settings["type"](
