@@ -46,15 +46,14 @@ class chart:
         if run_info is None:
             run_info = pgdb.fetchRunInfo(run_id)[run_id]
 
-        # Determine the maximum amount of food and moves possible and number
-        # of generations.
+        # Determine the maximum amount of food and moves possible.
         trail_data = pgdb.getTrailData(run_info["trails_id"])[0]
         max_food = np.bincount(np.squeeze(np.asarray(trail_data.flatten())))[1]
-        num_gens   = run_info["generations"]
         max_moves  = np.array(run_info["moves_limit"])
 
-        # Fetch the data on the run.
+        # Fetch the data on the run and determine number of generations.
         gens_data = pgdb.fetchRunGenerations([run_id])[run_id]
+        num_gens  = len(gens_data)
 
         x = np.linspace(0, num_gens - 1, num=num_gens)
 
@@ -396,10 +395,14 @@ class chart:
 
                 this_gen = []
                 for curr_run in run_ids_l:
-                    this_gen.append(gens_data[curr_run][curr_gen]
-                        [curr_stat_group][curr_stat])
+                    if curr_gen in gens_data[curr_run]:
+                        this_gen.append(gens_data[curr_run][curr_gen]
+                            [curr_stat_group][curr_stat])
+                    else:
+                        this_gen.append(None)
 
-                data_set[curr_gen] = np.mean(this_gen)
+                data_set[curr_gen] = np.mean(
+                    filter(lambda a: a is not None, this_gen))
 
             axis.plot(x, data_set, '-', label=curr_stat.title())
 
