@@ -838,6 +838,10 @@ def sweep_chart(config_id):
             "title": "Moves vs. Generations",
             "url" : the_urls["moves-taken"]
         },
+        {
+            "title": "Run Count",
+            "url" : the_urls["num-runs"]
+        },
     ]
 
     # Build the list of URLs to other sweep charts.

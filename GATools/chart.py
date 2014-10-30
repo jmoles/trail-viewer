@@ -199,6 +199,15 @@ class chart:
                 "yaxis" : "Moves Taken",
                 "label" : ["min", "mean", "std"]
             },
+            "num-runs" : {
+                "title" : "Number of runs",
+                "db-idx" : 1,
+                "val-func" : [len],
+                "plot-mode" : "lines",
+                "xaxis" : x_label.title(),
+                "yaxis" : "Moves Taken",
+                "label" : ["min", "mean", "std"]
+            },
         }
 
         # Add the max line for moves if not "moves_limit" type.
@@ -210,17 +219,19 @@ class chart:
         if (sweep_type == "p_mutate_crossover" or
             sweep_type == "dl_length_hidden"):
 
-            chart_set_config["food"]["xaxis"] = x_label
-            chart_set_config["food"]["yaxis"] = y_label
-            chart_set_config["food"]["zaxis"] = "Food Consumed"
-            chart_set_config["food"]["type"] = Heatmap
-            chart_set_config["food"]["val-func"] = [max]
+            for curr_key in chart_set_config.keys():
+                chart_set_config[curr_key]["xaxis"] = x_label
+                chart_set_config[curr_key]["yaxis"] = y_label
+                chart_set_config[curr_key]["type"] = Heatmap
+                if curr_key == "food":
+                    chart_set_config[curr_key]["zaxis"] = "Food Consumed"
+                    chart_set_config[curr_key]["val-func"] = [max]
+                elif curr_key == "moves-taken":
+                    chart_set_config[curr_key]["zaxis"] = "Food Consumed"
+                    chart_set_config[curr_key]["val-func"] = [max]
+                elif curr_key == "num-runs":
+                    chart_set_config[curr_key]["zaxis"] = "Number of Runs"
 
-            chart_set_config["moves-taken"]["xaxis"] = "P(mutate)"
-            chart_set_config["moves-taken"]["yaxis"] = "P(crossover)"
-            chart_set_config["moves-taken"]["zaxis"] = "Moves Taken"
-            chart_set_config["moves-taken"]["type"] = Heatmap
-            chart_set_config["moves-taken"]["val-func"] = [min]
             is_3d = True
 
         # TODO: Could multithread here to speed things up.
