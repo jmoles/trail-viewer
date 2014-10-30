@@ -444,11 +444,11 @@ class DBUtils:
         # Create the tuple of values to place in cursor.
         if (sweep_type == "dl_length" or sweep_type == "hidden" or
             sweep_type == "dl_length_hidden"):
-            curs_tuple = ((config_id, ) * (17 - is_3d))
+            curs_tuple = ((config_id, ) * (16 - is_3d))
         elif sweep_type == "generation":
-            curs_tuple = ((config_id, ) * (14 - is_3d))
+            curs_tuple = ((config_id, ) * (13 - is_3d))
         else:
-            curs_tuple = ((config_id, ) * (15 - is_3d))
+            curs_tuple = ((config_id, ) * (14 - is_3d))
 
 
         with self.__getCursor() as curs:
