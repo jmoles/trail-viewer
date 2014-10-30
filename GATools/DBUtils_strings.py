@@ -130,7 +130,7 @@ class DBUtils_strings:
     generations.moves_min;"""
 
     DL_LENGTH_HIDDEN_SWEEP = """SELECT
-    networks.dl_length, networks.hidden_count, generations.food_max,
+    networks.hidden_count, networks.dl_length, generations.food_max,
     generations.moves_min, run.id
     FROM run
     INNER JOIN generations
@@ -186,8 +186,8 @@ class DBUtils_strings:
     generations.generation = (SELECT generations FROM
         run_config WHERE id = %s) - 1 AND
     run.debug IS FALSE
-    ORDER BY networks.dl_length,
-    networks.hidden_count,
+    ORDER BY networks.hidden_count,
+    networks.dl_length,
     generations.food_max,
     generations.moves_min;"""
 
