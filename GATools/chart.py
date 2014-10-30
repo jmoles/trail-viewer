@@ -254,7 +254,6 @@ class chart:
                                 [x[settings["db-idx"]] for x in db_data[cy][cx]])
 
                         this_z = [myz[1] for myz in sorted(this_z.items())]
-                        print "this_z_items: {0}".format(this_z)
                         z_vals.append(this_z)
 
                     this_trace = settings["type"](
