@@ -258,18 +258,29 @@ class chart:
                     x_vals = list(set(x_vals))
                     x_vals.sort()
 
+                    y_vals = np.linspace(
+                        min(y_vals),
+                        max(y_vals),
+                        num=max(y_vals) - min(y_vals) + 1)
+
+                    x_vals = np.linspace(
+                        min(x_vals),
+                        max(x_vals),
+                        num=max(x_vals) - min(x_vals) + 1)
+
                     # Go through all of the y/x values and fill in z.
                     for cy in y_vals:
                         this_z = dict.fromkeys(x_vals)
-                        for cx in sorted(db_data[cy].keys()):
-                            this_z[cx] = this_func(
-                                [x[settings["db-idx"]] for x in db_data[cy][cx]])
+                        if cy in db_data:
+                            for cx in sorted(db_data[cy].keys()):
+                                this_z[cx] = this_func(
+                                    [x[settings["db-idx"]] for x in db_data[cy][cx]])
 
                         this_z = [myz[1] for myz in sorted(this_z.items())]
                         z_vals.append(this_z)
 
                     this_trace = settings["type"](
-                        x=sorted(set(x_vals)),
+                        x=x_vals,
                         y=y_vals,
                         z=z_vals,
                         name=settings["label"][idx].title()
