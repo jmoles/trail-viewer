@@ -179,7 +179,7 @@ class chart:
 
         chart_set_config = {
             "food" : {
-                "title" : "Food vs. Generations Sweep",
+                "title" : "Food vs. {0} Sweep".format(x_label),
                 "db-idx" : 0,
                 "val-func" : [max, np.average],
                 "plot-mode" : "lines",
@@ -190,7 +190,7 @@ class chart:
                 "label" : ["max", "mean", "std"]
             },
             "moves-taken" : {
-                "title" : "Moves Taken vs. Generations Sweep",
+                "title" : "Moves Taken vs. {0} Sweep".format(x_label),
                 "db-idx" : 1,
                 "val-func" : [min, np.average],
                 "plot-mode" : "lines",
@@ -224,9 +224,11 @@ class chart:
                 chart_set_config[curr_key]["type"] = Heatmap
                 if curr_key == "food":
                     chart_set_config[curr_key]["zaxis"] = "Food Consumed"
+                    chart_set_config[curr_key]["title"] = "Food 3D Sweep"
                     chart_set_config[curr_key]["val-func"] = [max]
                 elif curr_key == "moves-taken":
                     chart_set_config[curr_key]["zaxis"] = "Food Consumed"
+                    chart_set_config[curr_key]["title"] = "Moves Taken 3D Sweep"
                     chart_set_config[curr_key]["val-func"] = [max]
                 elif curr_key == "num-runs":
                     chart_set_config[curr_key]["zaxis"] = "Number of Runs"
