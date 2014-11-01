@@ -230,7 +230,7 @@ class chart:
                 elif curr_key == "moves-taken":
                     chart_set_config[curr_key]["zaxis"] = "Food Consumed"
                     chart_set_config[curr_key]["title"] = "Moves Taken 3D Sweep"
-                    chart_set_config[curr_key]["val-func"] = [max]
+                    chart_set_config[curr_key]["val-func"] = [min]
                 elif curr_key == "num-runs":
                     chart_set_config[curr_key]["zaxis"] = "Number of Runs"
 
@@ -299,7 +299,6 @@ class chart:
                         name=settings["label"][idx].title()
                     )
 
-                    np.std
                 else:
                     for curr_x in sorted(db_data.keys()):
                         y_vals.append(this_func(
