@@ -222,6 +222,7 @@ class chart:
                 chart_set_config[curr_key]["xaxis"] = x_label
                 chart_set_config[curr_key]["yaxis"] = y_label
                 chart_set_config[curr_key]["type"] = Heatmap
+
                 if curr_key == "food":
                     chart_set_config[curr_key]["zaxis"] = "Food Consumed"
                     chart_set_config[curr_key]["title"] = "Food 3D Sweep"
@@ -232,6 +233,13 @@ class chart:
                     chart_set_config[curr_key]["val-func"] = [max]
                 elif curr_key == "num-runs":
                     chart_set_config[curr_key]["zaxis"] = "Number of Runs"
+
+                if sweep_type == "p_mutate_crossover":
+                    step_size = 0.1
+                else:
+                    step_size = 1.0
+
+                chart_set_config[curr_key]["step-size"] = step_size
 
             is_3d = True
 
@@ -258,15 +266,20 @@ class chart:
                     x_vals = list(set(x_vals))
                     x_vals.sort()
 
-                    y_vals = np.linspace(
-                        min(y_vals),
-                        max(y_vals),
-                        num=max(y_vals) - min(y_vals) + 1)
+                    y_vals = list(np.around(
+                        np.arange(
+                            start=min(y_vals),
+                            stop=max(y_vals) + settings["step-size"],
+                            step=settings["step-size"]),
+                        decimals=4))
 
-                    x_vals = np.linspace(
-                        min(x_vals),
-                        max(x_vals),
-                        num=max(x_vals) - min(x_vals) + 1)
+                    x_vals = list(np.around(
+                            np.arange(
+                            start=min(x_vals),
+                            stop=max(x_vals) + settings["step-size"],
+                            step=settings["step-size"]),
+                        decimals=4))
+
 
                     # Go through all of the y/x values and fill in z.
                     for cy in y_vals:
