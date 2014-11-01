@@ -50,24 +50,27 @@ WITH idsSubQuery AS (
             run_config WHERE id = %s)
 )
 
-    SELECT
-    networks.dl_length, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY networks.dl_length,
-    generations.food_max,
-    generations.moves_min;"""
+SELECT networks.dl_length, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY networks.dl_length,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     HIDDEN_COUNT_SWEEP = """
 WITH idsSubQuery AS (
@@ -120,24 +123,27 @@ WITH idsSubQuery AS (
             run_config WHERE id = %s)
 )
 
-    SELECT
-    networks.hidden_count, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY networks.hidden_count,
-    generations.food_max,
-    generations.moves_min;"""
+SELECT networks.hidden_count, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY networks.hidden_count,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     DL_LENGTH_HIDDEN_SWEEP = """
 WITH idsSubQuery AS (
@@ -186,25 +192,27 @@ WITH idsSubQuery AS (
             run_config WHERE id = %s)
 )
 
-    SELECT
-    networks.hidden_count, networks.dl_length, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY networks.hidden_count,
+SELECT networks.hidden_count, networks.dl_length, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY networks.hidden_count,
     networks.dl_length,
-    generations.food_max,
-    generations.moves_min;"""
+    g1.food_max,
+    g1.moves_min;"""
 
     P_MUTATE_SWEEP = """
 WITH idsSubQuery AS (
@@ -241,24 +249,28 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.p_mutate, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.p_mutate,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.p_mutate, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.p_mutate,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     P_CROSSOVER_SWEEP = """
 WITH idsSubQuery AS (
@@ -296,24 +308,27 @@ WITH idsSubQuery AS (
                 run_config WHERE id = %s)
 )
 
-    SELECT
-    run_config.p_crossover, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.p_crossover,
-    generations.food_max,
-    generations.moves_min;"""
+SELECT rc.p_crossover, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.p_crossover,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     P_MUTATE_CROSSOVER_SWEEP = """
 WITH idsSubQuery AS (
@@ -349,25 +364,28 @@ WITH idsSubQuery AS (
                 run_config WHERE id = %s)
 )
 
-    SELECT
-    run_config.p_crossover, run_config.p_mutate, generations.food_max,
-    generations.moves_min, run.id
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.p_crossover,
-    run_config.p_mutate,
-    generations.food_max,
-    generations.moves_min;"""
+SELECT rc.p_crossover, rc.p_mutate, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.p_crossover,
+    rc.p_mutate,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     SELECTION_SWEEP = """
 WITH idsSubQuery AS (
@@ -405,26 +423,28 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.selection_id, generations.food_max,
-    generations.moves_min, run.id, selection.name
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    INNER JOIN selection
-    ON run_config.selection_id = selection.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.selection_id,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.selection_id, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.selection_id,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     TOURNAMENT_SWEEP = """
 WITH idsSubQuery AS (
@@ -460,26 +480,28 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.sel_tourn_size, generations.food_max,
-    generations.moves_min, run.id, selection.name
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    INNER JOIN selection
-    ON run_config.selection_id = selection.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.sel_tourn_size,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.sel_tourn_size, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.sel_tourn_size,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     POPULATION_SWEEP = """
 WITH idsSubQuery AS (
@@ -516,26 +538,28 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.population, generations.food_max,
-    generations.moves_min, run.id, selection.name
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    INNER JOIN selection
-    ON run_config.selection_id = selection.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.population,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.population, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.population,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     MOVES_LIMIT_SWEEP = """
 WITH idsSubQuery AS (
@@ -572,26 +596,28 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.moves_limit, generations.food_max,
-    generations.moves_min, run.id, selection.name
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    INNER JOIN selection
-    ON run_config.selection_id = selection.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.moves_limit,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.moves_limit, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.moves_limit,
+    g1.food_max,
+    g1.moves_min;
+"""
 
     GENERATION_SWEEP = """
     WITH idsSubQuery AS (
@@ -681,23 +707,25 @@ WITH idsSubQuery AS (
             algorithm_ver =  (SELECT algorithm_ver FROM
                 run_config WHERE id = %s)
 )
-    SELECT
-    run_config.lambda, generations.food_max,
-    generations.moves_min, run.id, selection.name
-    FROM run
-    INNER JOIN generations
-    ON run.id = generations.run_id
-    INNER JOIN run_config
-    ON run_config.id = run.run_config_id
-    INNER JOIN networks
-    ON run_config.networks_id = networks.id
-    INNER JOIN selection
-    ON run_config.selection_id = selection.id
-    WHERE run.run_config_id IN (SELECT id FROM idsSubQuery) AND
-    generations.generation IN (SELECT generations - 1
-        FROM run_config
-        WHERE id IN (SELECT id FROM idsSubQuery)) AND
-    run.debug IS FALSE
-    ORDER BY run_config.lambda,
-    generations.food_max,
-    generations.moves_min;"""
+
+SELECT rc.lambda, g1.food_max, g1.moves_min,
+g1.run_id, g1.generation
+FROM generations g1
+INNER JOIN run
+ON run.id = g1.run_id
+INNER JOIN run_config rc
+ON run.run_config_id = rc.id
+INNER JOIN networks
+ON rc.networks_id = networks.id
+INNER JOIN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)) idf
+ON g1.run_id = idf.id
+LEFT OUTER JOIN generations g2
+ON (
+    g1.run_id = g2.run_id
+    AND g1.generation < g2.generation
+    AND g2.run_id IN (SELECT id from run WHERE run_config_id IN (SELECT id FROM idsSubQuery)))
+WHERE g2.run_id IS NULL
+ORDER BY rc.lambda,
+    g1.food_max,
+    g1.moves_min;
+"""
