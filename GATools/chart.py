@@ -61,7 +61,7 @@ class chart:
         chart_set_config = {
             "food" : {
                 "db_key" : "food",
-                "stats" : ["max", "avg", "std"],
+                "stats" : ["max", "min", "avg", "std"],
                 "title" : "Food vs. Generations for Run ID {0}",
                 "type" : Scatter,
                 "plot-mode" : "lines",
@@ -72,7 +72,7 @@ class chart:
             },
             "moves-taken" : {
                 "db_key" : "moves",
-                "stats" : ["min", "avg", "std"],
+                "stats" : ["max", "min", "avg", "std"],
                 "title" : "Moves Taken vs. Generations for Run ID {0}",
                 "type" : Scatter,
                 "plot-mode" : "lines",
