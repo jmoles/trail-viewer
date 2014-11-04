@@ -16,7 +16,10 @@ WITH idsSubQuery AS (
                         SELECT networks_id FROM run_config WHERE id=%s)
                     ) AND
                 dl_length > 0 AND
-                name like 'Jeff-like NN MDL%%'
+                flavor = (
+                    SELECT flavor FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    )
             ORDER BY input_count
         ) AND
         trails_id =  (SELECT trails_id FROM
@@ -89,7 +92,10 @@ WITH idsSubQuery AS (
                         SELECT networks_id FROM run_config WHERE id=%s)
                     ) AND
                 dl_length > 0 AND
-                name like 'Jeff-like NN MDL%%'
+                flavor = (
+                    SELECT flavor FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    )
             ORDER BY input_count
         ) AND
         trails_id =  (SELECT trails_id FROM
@@ -158,7 +164,10 @@ WITH idsSubQuery AS (
                         SELECT networks_id FROM run_config WHERE id=%s)
                     ) AND
                 dl_length > 0 AND
-                name like 'Jeff-like NN MDL%%'
+                flavor = (
+                    SELECT flavor FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    )
             ORDER BY input_count
         ) AND
         trails_id =  (SELECT trails_id FROM
