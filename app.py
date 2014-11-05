@@ -205,10 +205,10 @@ def build_trail_image(trail_id, border=1, box_size=32):
         # This means the trail is not valid.
         return invalid_trail_error(trail_id)
 
-    # Determin the size of the trail
+    # Determine the size of the trail image.
     IMAGE_SIZE = (
-        (len(TRAIL_DATA) + 2) * box_size,
-        (len(TRAIL_DATA[0]) + 2) * box_size
+        (len(TRAIL_DATA[0]) + border) * box_size,
+        (len(TRAIL_DATA) + border) * box_size
     )
 
     im = Image.new("RGBA", IMAGE_SIZE, (255, 255, 255, 0))
