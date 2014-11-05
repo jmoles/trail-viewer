@@ -91,7 +91,6 @@ WITH idsSubQuery AS (
                     SELECT output_count FROM networks WHERE id=(
                         SELECT networks_id FROM run_config WHERE id=%s)
                     ) AND
-                dl_length > 0 AND
                 flavor = (
                     SELECT flavor FROM networks WHERE id=(
                         SELECT networks_id FROM run_config WHERE id=%s)
