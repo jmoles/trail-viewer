@@ -151,7 +151,7 @@ class chart:
 
             # Generate the URL.
             plot_urls[chart_type] = chart.__generate_plotly_url(fig,
-                filename="{0}_{1}".format(chart_type, run_id),
+                filename="apigen/{0}_{1}".format(chart_type, run_id),
                 fileopt='overwrite',)
 
         return plot_urls
@@ -360,7 +360,7 @@ class chart:
 
             # Generate the URL.
             plot_urls[chart_type] = chart.__generate_plotly_url(fig,
-                filename="sweep_{0}_{1}_{2}".format(
+                filename="apigen/sweep_{0}_{1}_{2}".format(
                     ''.join(e for e in x_label if e.isalnum()),
                     config_id,
                     chart_type),
