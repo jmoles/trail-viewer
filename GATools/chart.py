@@ -5,7 +5,6 @@ import base64
 import matplotlib.pyplot as pyplot
 import matplotlib.backends.backend_agg as pltagg
 import numpy as np
-from scipy import stats
 import sys
 import plotly.plotly as py
 from plotly.graph_objs import Scatter, Data, Layout, XAxis, YAxis, ZAxis
@@ -305,7 +304,7 @@ class chart:
                             [x[settings["db-idx"]] for x in db_data[curr_x]]))
 
                         if this_func == np.average:
-                            y_std_dev.append(stats.sem(
+                            y_std_dev.append(np.std(
                                 [x[settings["db-idx"]] for x in db_data[curr_x]]))
 
                     if this_func == np.average:
