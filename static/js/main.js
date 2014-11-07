@@ -176,12 +176,10 @@ function buildAntStr(x, y, angleR) {
     return ant_str;
 }
 
-function buildRotateString(x, y, angleD) {
+function buildRotateString(angleD) {
     var ant_str;
 
-    ant_str = "r" + angleD + "," +
-    (BOX_SIZE / 2 ) +  "," +
-    (BOX_SIZE / 2 );
+    ant_str = "r" + angleD;
 
     return ant_str;
 }
@@ -190,6 +188,8 @@ function buildMoveString(x_dir, y_dir) {
     var ant_str = "T" +
     x_dir * BOX_SIZE + "," +
     y_dir * BOX_SIZE;
+
+    console.log(ant_str)
 
     return ant_str;
 
@@ -323,8 +323,6 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
         moves_taken += MOVES_COUNTS[i];
     }
 
-    console.log(moves_taken);
-
     $("#food_consumed_count").text(
         food_consumed + " / " +
         (MAX_FOOD - food_consumed) + " / " + MAX_FOOD);
@@ -351,7 +349,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 if (ant_deg == -90) {
                     ant_deg = 270;
                 }
-                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "-90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
+                ant_id.animate({transform: "..." + buildRotateString("-90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
                     single_ant_anim(grid_p, fill_p, this, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx + 1);
                 });
                 break;
@@ -363,7 +361,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 } else if (ant_deg == 360 + 90) {
                     ant_deg = 90;
                 }
-                ant_id.animate({transform: "..." + buildRotateString(ant_x, ant_y, "90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
+                ant_id.animate({transform: "..." + buildRotateString("90")}, COOKIE_CONF["maze_options"]["speed"], "linear", function() {
                     single_ant_anim(grid_p, fill_p, this, ant_x, ant_y, ant_deg, trail_data, actions, actions_idx + 1);
                 });
                 break;
@@ -406,7 +404,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                     x_disp = MAX_X - 1;
                 } else if (ant_x >= MAX_X) {
                     ant_x = 0;
-                    y_disp = -1 * (MAX_X - 1);
+                    x_disp = -1 * (MAX_X - 1);
                 }
 
                 // Prepare the ant animation to sync other animations with it.
