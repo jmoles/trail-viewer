@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import datetime
 import numpy as np
 import os
 import psycopg2
@@ -451,39 +452,104 @@ class DBUtils:
             curs_tuple = ((config_id, ) * (14 - is_3d))
 
 
-        with self.__getCursor() as curs:
-            curs.execute(query_s, curs_tuple)
+        if (sweep_type == "dl_length"):
+            # Manually do these queries a different method.
 
-            ret_val = {}
+            # Get the run configuration IDs and dl_lengths.
+            # Then filter the config IDs to get run IDs.
+            # Finally, find the max food for each run ID.
+            with self.__getCursor() as curs:
+                curs.execute(dbs.DL_LENGTH_SWEEP_CONFIG_IDS, curs_tuple)
+                config_ids_length_t = curs.fetchall()
 
-            for record in curs:
+            # Create a dictionary to later lookup the length for a given
+            # configuration id.
+            len_by_cnf_id_d = dict(config_ids_length_t)
 
-                # Offset the records by 1 if it is 3D fetch.
-                sweep_idx_outer = record[0]
-                sweep_idx_inner = record[0 + is_3d]
-                food_max = record[1 + is_3d]
-                moves_min = record[2 + is_3d]
-                run_id = record[3 + is_3d]
+            # Get all of the run_ids we need to search by.
+            with self.__getCursor() as curs:
+                curs.execute("""SELECT run.id, run.run_config_id
+                    FROM run
+                    WHERE run_config_id IN %s;""",
+                    (tuple(len_by_cnf_id_d.keys()),)
+                )
+                run_ids_config_ids_t = curs.fetchall()
 
-                if  len(record) > (4 + is_3d):
-                    temp_tuple = (food_max, moves_min, run_id, record[4 + is_3d])
-                else:
-                    temp_tuple = (food_max, moves_min, run_id)
+            run_ids = [x for x, _ in run_ids_config_ids_t]
+            config_ids_per_run = [x for _, x in run_ids_config_ids_t]
 
-                if is_3d:
-                    if not ret_val.has_key(sweep_idx_outer):
-                        ret_val[sweep_idx_outer] = {}
+            # Create a dictionary to lookup the corresponding config id
+            # for the provided run id.
+            config_id_dict = {x : [] for x in run_ids}
 
-                    if not ret_val[sweep_idx_outer].has_key(sweep_idx_inner):
-                        ret_val[sweep_idx_outer][sweep_idx_inner] = []
+            for run_id, cnf_id in run_ids_config_ids_t:
+                config_id_dict[run_id] = cnf_id
 
-                    ret_val[sweep_idx_outer][sweep_idx_inner].append(temp_tuple)
+            # Create the return value dictionary with keys
+            # as the delay line length.
+            ret_val = {x : [] for x in len_by_cnf_id_d.values()}
 
-                else:
-                    if not ret_val.has_key(sweep_idx_outer):
-                        ret_val[sweep_idx_outer] = []
+            # Now, find the max food and min moves for each run_id.
+            with self.__getCursor() as curs:
+                curs.execute("""SELECT run_id, food_max, moves_min
+                    FROM single_run_bests
+                    WHERE run_id IN %s""", (tuple(run_ids), )
+                )
 
-                    ret_val[sweep_idx_outer].append(temp_tuple)
+                stats_by_run_id_d = curs.fetchall()
+
+            # Go through each record and prepare the tuple of data.
+            # Then, find the delay line length corresponding to this
+            # run id and insert it into the return value.
+            for run_id, food_max, moves_min in stats_by_run_id_d:
+
+                data_t = (food_max, moves_min, run_id)
+
+                # Find the delay line length for this run and insert
+                # it into the return value.
+                dl_len = len_by_cnf_id_d[config_id_dict[run_id]]
+
+                ret_val[dl_len].append(data_t)
+
+            return ret_val
+
+        else:
+            with self.__getCursor() as curs:
+                curs.execute(query_s, curs_tuple)
+
+                ret_val = {}
+
+                for record in curs:
+
+                    # Offset the records by 1 if it is 3D fetch.
+                    sweep_idx_outer = record[0]
+                    sweep_idx_inner = record[0 + is_3d]
+                    food_max = record[1 + is_3d]
+                    moves_min = record[2 + is_3d]
+                    run_id = record[3 + is_3d]
+
+                    if  len(record) > (4 + is_3d):
+                        temp_tuple = (food_max, moves_min, run_id,
+                            record[4 + is_3d])
+                    else:
+                        temp_tuple = (food_max, moves_min, run_id)
+
+                    if is_3d:
+                        if not ret_val.has_key(sweep_idx_outer):
+                            ret_val[sweep_idx_outer] = {}
+
+                        if not ret_val[sweep_idx_outer].has_key(
+                                sweep_idx_inner):
+                            ret_val[sweep_idx_outer][sweep_idx_inner] = []
+
+                        ret_val[sweep_idx_outer][sweep_idx_inner].append(
+                            temp_tuple)
+
+                    else:
+                        if not ret_val.has_key(sweep_idx_outer):
+                            ret_val[sweep_idx_outer] = []
+
+                        ret_val[sweep_idx_outer].append(temp_tuple)
 
             return ret_val
 

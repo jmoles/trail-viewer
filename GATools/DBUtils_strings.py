@@ -1,4 +1,59 @@
 class DBUtils_strings:
+    DL_LENGTH_SWEEP_CONFIG_IDS = """
+    SELECT run_config.id, networks.dl_length
+    FROM run_config
+    INNER JOIN networks
+    ON run_config.networks_id = networks.id
+    WHERE
+        networks_id IN (SELECT id
+            FROM networks
+            WHERE
+                hidden_count = (
+                    SELECT hidden_count FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    ) AND
+                output_count = (
+                    SELECT output_count FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    ) AND
+                dl_length > 0 AND
+                flavor = (
+                    SELECT flavor FROM networks WHERE id=(
+                        SELECT networks_id FROM run_config WHERE id=%s)
+                    )
+            ORDER BY input_count
+        ) AND
+        trails_id =  (SELECT trails_id FROM
+            run_config WHERE id = %s) AND
+        mutate_id =  (SELECT mutate_id FROM
+            run_config WHERE id = %s) AND
+        selection_id = (SELECT selection_id FROM
+            run_config WHERE id = %s) AND
+        generations =  (SELECT generations FROM
+            run_config WHERE id = %s) AND
+        population =  (SELECT population FROM
+            run_config WHERE id = %s) AND
+        moves_limit =  (SELECT moves_limit FROM
+            run_config WHERE id = %s) AND
+        COALESCE(sel_tourn_size,-1) = (
+            SELECT COALESCE(sel_tourn_size,-1) FROM
+                run_config WHERE id = %s) AND
+        p_mutate =  (SELECT p_mutate FROM
+            run_config WHERE id = %s) AND
+        p_crossover =  (SELECT p_crossover FROM
+            run_config WHERE id = %s) AND
+        weight_min =  (SELECT weight_min FROM
+            run_config WHERE id = %s) AND
+        weight_max =  (SELECT weight_max FROM
+            run_config WHERE id = %s) AND
+        COALESCE(lambda,-1) =  (SELECT COALESCE(lambda,-1) FROM
+            run_config WHERE id = %s) AND
+        variations_id =  (SELECT variations_id FROM
+            run_config WHERE id = %s) AND
+        algorithm_ver =  (SELECT algorithm_ver FROM
+            run_config WHERE id = %s)
+    """
+
     DL_LENGTH_SWEEP = """
 WITH idsSubQuery AS (
     SELECT id
