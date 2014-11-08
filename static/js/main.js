@@ -1,5 +1,3 @@
-var BOX_SIZE = 16;
-
 var GRID_VALS = {};
 GRID_VALS["empty"] = 0;
 GRID_VALS["food"] = 1;

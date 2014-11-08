@@ -8,6 +8,9 @@
 {% block head %}
 {{ super() }}
 <script>
+
+var BOX_SIZE = {{ box_size }};
+
 window.onload = function() {
     animate_trail({{ trail_data["data"] }},
         "trail_canvas_container_dojo_grid",

@@ -8,6 +8,8 @@
 {{ super() }}
 <script>
 
+var BOX_SIZE = {{ box_size }};
+
 window.onload = function() {
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
 

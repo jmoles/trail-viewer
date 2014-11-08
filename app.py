@@ -456,7 +456,8 @@ def trail_by_id(trail_id):
             id=trail_id,
             trail_data=table_data[trail_id],
             image_dropdown_list=sorted(PIL_DROPDOWN_LIST),
-            time_sec=finish_time_s)
+            time_sec=finish_time_s,
+            box_size=int(request.args.get('box_size', default=16)))
 
 
     if not app.debug:
@@ -769,7 +770,8 @@ def animate_trail(trail_id, actions):
         "animate_trail.html",
         trail_data=trail_data[trail_id],
         time_sec=finish_time_s,
-        actions=actions_clean)
+        actions=actions_clean,
+        box_size=int(request.args.get('box_size', default=32)))
 
 @app.route("/sweep/<int:config_id>")
 def sweep_chart(config_id):
