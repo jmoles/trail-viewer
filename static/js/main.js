@@ -423,7 +423,7 @@ function single_ant_anim(grid_p, fill_p, ant_id, ant_x, ant_y, ant_deg, trail_da
                 ant_id.animate(ant_anim);
 
                 // Mark this cell as a history place.
-                trail_data[ant_y][ant_x] == GRID_VALS["history"];
+                trail_data[ant_y][ant_x] = GRID_VALS["history"];
 
 
                 break;
